@@ -1,0 +1,9 @@
+{
+  "name": "@geomaster/core",
+  "private": true,
+  "scripts": {
+    "build": "cd ../.. && ./gradlew :core:build -x test",
+    "test": "cd ../.. && ./gradlew :core:test",
+    "dev": "cd ../.. && ./gradlew :core:bootRun"
+  }
+}

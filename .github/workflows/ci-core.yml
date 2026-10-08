@@ -1,0 +1,19 @@
+name: CI core
+on:
+  pull_request:
+    paths: ["apps/core/**", "packages/plans/**", "packages/api-contract/**", "gradle/**", "gradlew", "settings.gradle.kts", ".github/workflows/ci-core.yml"]
+  push:
+    branches: [main]
+    paths: ["apps/core/**", "packages/plans/**", "packages/api-contract/**", "gradle/**", "gradlew", "settings.gradle.kts"]
+jobs:
+  core:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 25
+      - uses: gradle/actions/setup-gradle@v4
+      # Tests use Testcontainers (Docker is available on ubuntu-latest runners).
+      - run: ./gradlew :core:build

@@ -1,0 +1,21 @@
+# Node / Next.js
+node_modules/
+.next/
+.turbo/
+dist/
+coverage/
+next-env.d.ts
+packages/api-contract/src/schema.d.ts
+
+# Java / Gradle
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+
+# Env and OS
+.env
+.env.*
+!.env.example
+.DS_Store
+.idea/
+*.iml

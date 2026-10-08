@@ -1,0 +1,10 @@
+{
+  "$comment": "Single source of truth for plan limits (FR-BIL-03). Read by apps/web (TypeScript) and apps/core (Java).",
+  "plans": [
+    { "id": "free", "selfServe": true, "priceChfMonthly": 0, "domains": 1, "prompts": 12, "engines": 1, "languages": 1, "scanFrequency": "once", "competitorsPerDomain": 3, "artifactsPerMonth": 0, "seats": 1, "historyMonths": 0, "consultingMinutesPerMonth": 0 },
+    { "id": "starter", "selfServe": true, "priceChfMonthly": 59, "domains": 1, "prompts": 30, "engines": 3, "languages": 2, "scanFrequency": "weekly", "competitorsPerDomain": 5, "artifactsPerMonth": 0, "seats": 1, "historyMonths": 12, "consultingMinutesPerMonth": 0 },
+    { "id": "pro", "selfServe": true, "priceChfMonthly": 169, "domains": 3, "prompts": 100, "engines": 3, "languages": 4, "scanFrequency": "weekly", "competitorsPerDomain": 10, "artifactsPerMonth": 50, "seats": 3, "historyMonths": null, "consultingMinutesPerMonth": 0 },
+    { "id": "premium", "selfServe": true, "priceChfMonthly": 690, "domains": 5, "prompts": 250, "engines": 3, "languages": 4, "scanFrequency": "weekly", "competitorsPerDomain": 15, "artifactsPerMonth": 200, "seats": 10, "historyMonths": null, "consultingMinutesPerMonth": 90 },
+    { "id": "enterprise", "selfServe": false, "priceChfMonthly": null, "domains": null, "prompts": null, "engines": 3, "languages": 4, "scanFrequency": "weekly", "competitorsPerDomain": null, "artifactsPerMonth": null, "seats": null, "historyMonths": null, "consultingMinutesPerMonth": null }
+  ]
+}

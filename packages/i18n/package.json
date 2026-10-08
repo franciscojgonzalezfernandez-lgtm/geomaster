@@ -1,0 +1,6 @@
+{
+  "name": "@geomaster/i18n",
+  "version": "0.1.0",
+  "private": true,
+  "description": "UI strings in EN, DE, FR, ES (NFR-08). Wired into apps/web in the i18n spec."
+}

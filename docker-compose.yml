@@ -1,0 +1,14 @@
+# Local development database: Postgres 17 + pgvector (ADR-0005).
+services:
+  db:
+    image: pgvector/pgvector:pg17
+    environment:
+      POSTGRES_DB: geomaster
+      POSTGRES_USER: geomaster
+      POSTGRES_PASSWORD: geomaster
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+volumes:
+  pgdata:
