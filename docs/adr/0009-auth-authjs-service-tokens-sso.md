@@ -1,9 +1,13 @@
 # ADR-0009: Authentication: Auth.js in web, service tokens to core, SSO later
 
-- Status: Accepted
+- Status: Superseded by [ADR-0017](0017-auth-better-auth-jwks.md) (2026-10-09)
 - Date: 2026-10-08
 - Deciders: Javi
 - Related requirements: FR-ACC-01, FR-ACC-03, Enterprise
+
+> **Superseded.** The library choice (Auth.js) is replaced by Better Auth in ADR-0017.
+> The service-token-to-core and tenant-isolation decisions below still hold; ADR-0017
+> only changes the web auth library and upgrades the token to a JWKS-verified JWT.
 
 ## Context
 

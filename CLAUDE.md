@@ -13,7 +13,7 @@ Context imports: @docs/PRD.md @docs/architecture.md @docs/HANDOFF.md
 ## Stack
 
 - Monorepo: pnpm 12 workspaces + Turborepo 2; Gradle 9 root wrapper (`./gradlew :core:…`).
-- `apps/web`: Next.js 16 App Router, TypeScript strict, Tailwind v4, next-intl, Auth.js, Stripe. Read `apps/web/AGENTS.md` before writing Next.js code.
+- `apps/web`: Next.js 16 App Router, TypeScript strict, Tailwind v4, next-intl, Better Auth (ADR-0017), Stripe. Read `apps/web/AGENTS.md` before writing Next.js code.
 - `apps/core`: Java 25, Spring Boot 4.1, virtual threads, JDBC + Flyway, PostgreSQL 17 + pgvector, springdoc OpenAPI.
 - Shared: `packages/plans` (limits), `packages/api-contract` (OpenAPI + TS types), `packages/i18n`, `packages/ui`.
 

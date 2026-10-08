@@ -1,0 +1,6 @@
+# Default owner for everything. Branch protection on main requires review;
+# the Claude PR-review flow (ADR-0018) can satisfy it for non-schema PRs.
+* @franciscojgonzalezfernandez-lgtm
+
+# Schema and migrations always need the human owner (never auto-approved, ADR-0018).
+/apps/core/src/main/resources/db/migration/ @franciscojgonzalezfernandez-lgtm

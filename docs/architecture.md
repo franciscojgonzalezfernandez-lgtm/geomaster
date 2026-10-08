@@ -6,7 +6,7 @@ Two deployables in one monorepo: `apps/web` (Next.js on Vercel) owns UI, auth, b
 flowchart LR
   user([User / visitor]) --> web
   subgraph Vercel [Vercel · fra1]
-    web[apps/web<br/>Next.js 16<br/>UI · Auth.js · Stripe · blog · landings]
+    web[apps/web<br/>Next.js 16<br/>UI · Better Auth · Stripe · blog · landings]
   end
   subgraph Fly [Fly.io · Frankfurt]
     core[apps/core<br/>Spring Boot 4 · Java 25<br/>scans · extraction · GEO Score<br/>agents · RAG · artifacts · budget guard]

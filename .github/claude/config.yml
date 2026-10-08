@@ -1,0 +1,30 @@
+# Policy for the automated PR review + conditional auto-approval (ADR-0018).
+# Change this file to tune the flow — e.g. ask the coding agent to flip `enabled`,
+# raise the score, or add a protected path. Every change is a one-line, reviewable PR.
+
+auto_approve:
+  # Master kill-switch. false = agents still review and comment, but never approve/auto-merge.
+  enabled: true
+
+  # Minimum Claude quality score (0–100) required to auto-approve.
+  min_quality_score: 90
+
+  # Criteria that must ALL be true (checked by the review agent against the PR).
+  require:
+    - tests_pass            # unit/integration tests + extractor evals green
+    - smoke_pass            # ADR-0013 smoke job green (app actually boots)
+    - lighthouse_90         # ≥ 0.9 on touched public pages (when any)
+    - i18n_complete         # user-facing strings exist in EN, DE, FR, ES
+    - provider_layer_for_llm# any LLM call goes through the provider layer and records cost
+    - no_hardcoded_limits   # plan limits read from packages/plans, not hard-coded
+    - no_blocking_findings  # zero correctness/security blocking findings
+
+  # Diffs touching any of these ALWAYS require a human — never auto-approved.
+  # Database schema changes and migrations are intentionally fenced here.
+  block_on_paths:
+    - "apps/core/src/main/resources/db/migration/**"
+    - "**/*.sql"
+
+  # A PR carrying any of these labels is never auto-approved (per-PR override).
+  block_on_labels:
+    - "no-auto-approve"
