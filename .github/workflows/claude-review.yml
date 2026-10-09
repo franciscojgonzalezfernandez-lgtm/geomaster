@@ -1,0 +1,196 @@
+name: Claude PR review
+
+# Automated PR review + conditional auto-approval (ADR-0018).
+# Runs ONLY after the CI workflows finish successfully (workflow_run), in a fresh
+# clean context per PR. A Claude cloud agent reads the diff for correctness bugs and
+# vulnerabilities and emits a machine-readable verdict; a deterministic gate decides
+# whether to auto-approve. Schema/migration diffs are fenced in CI, never trusted to
+# the agent. No-ops safely if ANTHROPIC_API_KEY is absent.
+#
+# Prerequisites (owner, one-time):
+#   1. Install the Claude GitHub app on this repo.
+#   2. Add repository secret ANTHROPIC_API_KEY.
+#   3. Enable branch protection on main requiring the CI + smoke + this review check.
+
+on:
+  workflow_run:
+    workflows: ["CI core", "CI web", "CI smoke"]
+    types: [completed]
+
+permissions:
+  contents: read
+  pull-requests: write
+  checks: read
+
+concurrency:
+  group: claude-review-${{ github.event.workflow_run.head_sha }}
+  cancel-in-progress: true
+
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+    outputs:
+      proceed: ${{ steps.g.outputs.proceed }}
+      pr_number: ${{ steps.g.outputs.pr_number }}
+      head_sha: ${{ steps.g.outputs.head_sha }}
+      has_key: ${{ steps.k.outputs.has_key }}
+    steps:
+      - id: k
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: echo "has_key=${{ env.ANTHROPIC_API_KEY != '' }}" >> "$GITHUB_OUTPUT"
+      - id: g
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          echo "head_sha=$HEAD_SHA" >> "$GITHUB_OUTPUT"
+          # The triggering CI run must itself be green.
+          if [ "$RUN_CONCLUSION" != "success" ]; then
+            echo "Triggering run not successful ($RUN_CONCLUSION) — skip."
+            echo "proceed=false" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          # Resolve the open PR for this head SHA.
+          PR=$(gh api "repos/$REPO/commits/$HEAD_SHA/pulls" --jq '.[0].number' 2>/dev/null || echo "")
+          if [ -z "$PR" ] || [ "$PR" = "null" ]; then
+            echo "No open PR for $HEAD_SHA — skip."
+            echo "proceed=false" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          echo "pr_number=$PR" >> "$GITHUB_OUTPUT"
+          # Every CI workflow run that executed for this SHA must have succeeded
+          # (don't review on a red build; wait until the last one is green).
+          BAD=$(gh api "repos/$REPO/actions/runs?head_sha=$HEAD_SHA&event=pull_request" \
+            --jq '[.workflow_runs[] | select(.name|IN("CI core","CI web","CI smoke")) | select(.status!="completed" or .conclusion!="success")] | length')
+          if [ "$BAD" != "0" ]; then
+            echo "Not all CI workflows are green yet for $HEAD_SHA — skip (a later completion retriggers)."
+            echo "proceed=false" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          echo "proceed=true" >> "$GITHUB_OUTPUT"
+
+  review:
+    needs: guard
+    if: ${{ needs.guard.outputs.proceed == 'true' && needs.guard.outputs.has_key == 'true' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.guard.outputs.head_sha }}
+          fetch-depth: 0
+
+      - id: diff
+        name: Compute diff and schema fence (deterministic, not trusted to the agent)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ needs.guard.outputs.pr_number }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          BASE=$(gh api "repos/$REPO/pulls/$PR" --jq '.base.sha')
+          git fetch --no-tags origin "$BASE"
+          CHANGED=$(git diff --name-only "$BASE"...HEAD)
+          echo "$CHANGED" > changed-files.txt
+          # Protected paths from config (schema + migrations). Fence computed here, in CI.
+          TOUCHES_SCHEMA=false
+          while IFS= read -r pat; do
+            [ -z "$pat" ] && continue
+            if echo "$CHANGED" | grep -qiE "$(printf '%s' "$pat" | sed 's#\*\*#.*#g; s#/#\\/#g')"; then
+              TOUCHES_SCHEMA=true
+            fi
+          done < <(yq -r '.auto_approve.block_on_paths[]' .github/claude/config.yml)
+          echo "touches_schema=$TOUCHES_SCHEMA" >> "$GITHUB_OUTPUT"
+          echo "base_sha=$BASE" >> "$GITHUB_OUTPUT"
+
+      - name: Claude review (clean context) → verdict JSON
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          # Tools kept minimal and read-only except for writing the verdict file.
+          claude_args: '--allowedTools "Read,Grep,Glob,Bash(git diff:*),Bash(git log:*),Write"'
+          prompt: |
+            You are reviewing GitHub PR #${{ needs.guard.outputs.pr_number }} for the GEOMASTER
+            monorepo, in a fresh context. Read CLAUDE.md, docs/architecture.md and the relevant
+            ADRs/specs, then review ONLY the diff of this PR against its base
+            (${{ steps.diff.outputs.base_sha }}...HEAD; files in changed-files.txt).
+
+            Find: correctness bugs; security vulnerabilities (OWASP Top 10, secrets, injection,
+            broken authz, tenant-isolation leaks where a query is not scoped by account_id,
+            risky dependencies). Then judge the PR against the project's checklist:
+            tests/evals pass, user-facing strings exist in EN/DE/FR/ES, every LLM call goes
+            through the provider layer and records cost, no plan limit is hard-coded
+            (limits come from packages/plans), Lighthouse ≥ 0.9 on any touched public page.
+
+            Write your verdict to ./claude-verdict.json (and nothing else to the repo), exactly:
+            {
+              "quality_score": <0-100 integer>,
+              "blocking_findings": [{"severity":"high|med","title":"...","file":"...","why":"..."}],
+              "criteria": {
+                "tests_pass": <bool>, "smoke_pass": <bool>, "lighthouse_90": <bool>,
+                "i18n_complete": <bool>, "provider_layer_for_llm": <bool>,
+                "no_hardcoded_limits": <bool>, "no_blocking_findings": <bool>
+              },
+              "summary": "<2-4 sentence review summary>"
+            }
+            Also post the summary and findings as a PR review comment. Be strict: if unsure a
+            criterion holds, mark it false. Do not approve or merge — the gate decides.
+
+      - name: Upload verdict
+        uses: actions/upload-artifact@v4
+        with:
+          name: claude-verdict
+          path: claude-verdict.json
+          if-no-files-found: warn
+
+      - id: gate
+        name: Policy gate (deterministic) → approve or hold
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ needs.guard.outputs.pr_number }}
+          REPO: ${{ github.repository }}
+          TOUCHES_SCHEMA: ${{ steps.diff.outputs.touches_schema }}
+        run: |
+          set -euo pipefail
+          cfg() { yq -r "$1" .github/claude/config.yml; }
+          ENABLED=$(cfg '.auto_approve.enabled')
+          MIN=$(cfg '.auto_approve.min_quality_score')
+
+          if [ ! -f claude-verdict.json ]; then
+            echo "No verdict file — cannot auto-approve."; SCORE=0
+          else
+            SCORE=$(jq -r '.quality_score // 0' claude-verdict.json)
+          fi
+
+          # All required criteria must be true in the verdict.
+          REQ_OK=true
+          for c in $(cfg '.auto_approve.require[]'); do
+            v=$(jq -r --arg k "$c" '.criteria[$k] // false' claude-verdict.json 2>/dev/null || echo false)
+            [ "$v" = "true" ] || { REQ_OK=false; echo "criterion $c not met"; }
+          done
+
+          # Per-PR opt-out labels.
+          LABELS=$(gh api "repos/$REPO/issues/$PR/labels" --jq '.[].name' 2>/dev/null || true)
+          LABEL_BLOCK=false
+          for l in $(cfg '.auto_approve.block_on_labels[]'); do
+            echo "$LABELS" | grep -qx "$l" && LABEL_BLOCK=true
+          done
+
+          REASON=""
+          [ "$ENABLED" = "true" ] || REASON="auto-approval disabled in config"
+          [ "$TOUCHES_SCHEMA" = "true" ] && REASON="diff touches DB schema/migration — human required"
+          [ "$LABEL_BLOCK" = "true" ] && REASON="opt-out label present"
+          [ "$SCORE" -ge "$MIN" ] 2>/dev/null || REASON="quality score $SCORE < $MIN"
+          [ "$REQ_OK" = "true" ] || REASON="one or more required criteria not met"
+
+          if [ -z "$REASON" ]; then
+            echo "Auto-approving PR #$PR (score=$SCORE)."
+            gh pr review "$PR" --approve --body "Auto-approved by Claude PR review (score ${SCORE}, all criteria met, no schema change). Policy: .github/claude/config.yml (ADR-0018)."
+            gh pr merge "$PR" --auto --squash || echo "auto-merge not enabled on repo; approval posted."
+          else
+            echo "Holding PR #$PR for a human: $REASON"
+            gh pr comment "$PR" --body "🤖 Claude PR review: **not auto-approved** — ${REASON}. Review comments above; a human merge is required. (score ${SCORE}, ADR-0018)"
+          fi
