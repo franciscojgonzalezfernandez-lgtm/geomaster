@@ -43,18 +43,28 @@ that:
   require a human, and
 - auto-approval is **enabled in configuration** and the PR carries no opt-out label.
 
-When all hold, the agent posts an approving review and enables GitHub auto-merge; the PR still
-merges only once every required check (ADR-0013) is green. When any fails, the agent posts its
-findings as a review and leaves the PR for a human — it never blocks silently.
+**Enforcement is a required status check, not a GitHub approval.** A solo author cannot approve
+their own PR, so `main` requires **0 approving reviews** and instead requires the gate job's
+`review` check. The gate encodes the verdict as that check:
+- policy holds → enable auto-merge and exit success → `review` **green** → PR merges once all
+  required checks (ADR-0013) are green;
+- held or schema/migration diff → comment the reason and exit failure → `review` **red** → PR
+  blocked; only an admin override merges it;
+- kill-switch off (`enabled: false`) → advisory comment, no auto-merge, exit success → `review`
+  green and non-blocking, so a human merges manually.
+
+It never blocks silently: every outcome posts a comment with the reason.
 
 **Configuration** lives in `.github/claude/config.yml` (policy as code): `enabled`,
 `min_quality_score`, `require[]` criteria, `block_on_paths[]`, `block_on_labels[]`. It is changed
 by editing that file (e.g. in conversation with the coding agent) — turning auto-approval off is a
 one-line, reversible PR, and `block_on_labels` (`no-auto-approve`) is a per-PR override.
 
-**Prerequisites** (owner, one-time): install the Claude GitHub app on the repo and add the
-`ANTHROPIC_API_KEY` repository secret; enable branch protection on `main` requiring the CI + smoke
-+ Claude-review checks. The review workflow no-ops safely if the secret is absent.
+**Prerequisites** (owner, one-time): install the Claude GitHub app on the repo; add the
+`ANTHROPIC_API_KEY` repository secret; enable repo "Allow auto-merge"; set branch protection on
+`main` to **0 required approvals** and require the `web-smoke`, `core-smoke` and `review` checks.
+The review workflow no-ops safely if the secret is absent (then every PR is admin-merged until it
+is set).
 
 ## Consequences
 
