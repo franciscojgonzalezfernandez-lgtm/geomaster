@@ -147,7 +147,12 @@ jobs:
           if-no-files-found: warn
 
       - id: gate
-        name: Policy gate (deterministic) → approve or hold
+        name: Policy gate (deterministic) → this job's success/failure IS the required `review` check
+        # Design B (ADR-0018): no GitHub approval is used. main requires 0 approvals and the
+        # `review` status check. This step encodes the verdict as the check result:
+        #   enabled + policy passes → auto-merge + exit 0 (check GREEN → mergeable)
+        #   enabled + held/schema  → comment + exit 1 (check RED → blocked; admin override only)
+        #   disabled (kill-switch) → advisory comment, no auto-merge, exit 0 (GREEN, non-blocking)
         env:
           GH_TOKEN: ${{ github.token }}
           PR: ${{ needs.guard.outputs.pr_number }}
@@ -160,7 +165,7 @@ jobs:
           MIN=$(cfg '.auto_approve.min_quality_score')
 
           if [ ! -f claude-verdict.json ]; then
-            echo "No verdict file — cannot auto-approve."; SCORE=0
+            echo "No verdict file — treating as score 0."; SCORE=0
           else
             SCORE=$(jq -r '.quality_score // 0' claude-verdict.json)
           fi
@@ -179,18 +184,26 @@ jobs:
             echo "$LABELS" | grep -qx "$l" && LABEL_BLOCK=true
           done
 
+          # Kill-switch: advisory only, never blocks or auto-merges. Humans merge manually.
+          if [ "$ENABLED" != "true" ]; then
+            gh pr comment "$PR" --body "🤖 Claude review (advisory — auto-approval disabled in config). score ${SCORE}. See review above; merge is manual. (ADR-0018)"
+            echo "auto-approval disabled → advisory, non-blocking."
+            exit 0
+          fi
+
           REASON=""
-          [ "$ENABLED" = "true" ] || REASON="auto-approval disabled in config"
           [ "$TOUCHES_SCHEMA" = "true" ] && REASON="diff touches DB schema/migration — human required"
           [ "$LABEL_BLOCK" = "true" ] && REASON="opt-out label present"
           [ "$SCORE" -ge "$MIN" ] 2>/dev/null || REASON="quality score $SCORE < $MIN"
           [ "$REQ_OK" = "true" ] || REASON="one or more required criteria not met"
 
           if [ -z "$REASON" ]; then
-            echo "Auto-approving PR #$PR (score=$SCORE)."
-            gh pr review "$PR" --approve --body "Auto-approved by Claude PR review (score ${SCORE}, all criteria met, no schema change). Policy: .github/claude/config.yml (ADR-0018)."
-            gh pr merge "$PR" --auto --squash || echo "auto-merge not enabled on repo; approval posted."
+            echo "Policy passed for PR #$PR (score=$SCORE) → enabling auto-merge."
+            gh pr merge "$PR" --auto --squash || echo "auto-merge enable failed (not fatal)."
+            gh pr comment "$PR" --body "🤖 Claude review: **policy passed** (score ${SCORE}, all criteria met, no schema change). Auto-merge enabled. (ADR-0018)"
+            exit 0
           else
             echo "Holding PR #$PR for a human: $REASON"
-            gh pr comment "$PR" --body "🤖 Claude PR review: **not auto-approved** — ${REASON}. Review comments above; a human merge is required. (score ${SCORE}, ADR-0018)"
+            gh pr comment "$PR" --body "🤖 Claude review: **held for a human** — ${REASON}. Review comments above; admin merge required. (score ${SCORE}, ADR-0018)"
+            exit 1
           fi
