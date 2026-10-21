@@ -6,7 +6,7 @@ Ordered so the slice is demonstrable end-to-end as early as possible.
 - [ ] T1 — Flyway `V2__accounts_projects.sql`: `account`, `app_user`, `account_member`, `project`,
       `project_language` + `auth_*` tables; `citext`, indexes, `(account_id, domain)` unique.
       (REQ-2, REQ-8, REQ-10, REQ-17; ADR-0005)
-- [ ] T2 — Core domain + repositories with `TenantContext`; every query scoped by `account_id`.
+- [x] T2 — Core domain + repositories with `TenantContext`; every query scoped by `account_id`.
       (REQ-6, REQ-7; ADR-0003, ADR-0005)
 - [ ] T3 — `ServiceTokenFilter`: verify EdDSA JWT against cached web JWKS, populate `TenantContext`,
       401 on failure. (REQ-4, REQ-5; ADR-0017)
