@@ -44,8 +44,10 @@ that:
 - auto-approval is **enabled in configuration** and the PR carries no opt-out label.
 
 **Enforcement is a required status check, not a GitHub approval.** A solo author cannot approve
-their own PR, so `main` requires **0 approving reviews** and instead requires the gate job's
-`review` check. The gate encodes the verdict as that check:
+their own PR, so `main` requires **0 approving reviews** and instead requires a `review` status
+check. Because this workflow is `workflow_run`-triggered, its own check-run attaches to the default
+branch rather than the PR head, so the gate explicitly **posts a `review` commit status onto the PR
+head SHA** — that status is what branch protection matches. The gate encodes the verdict as it:
 - policy holds → enable auto-merge and exit success → `review` **green** → PR merges once all
   required checks (ADR-0013) are green;
 - held or schema/migration diff → comment the reason and exit failure → `review` **red** → PR

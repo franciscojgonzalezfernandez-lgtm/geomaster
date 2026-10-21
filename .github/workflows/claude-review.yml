@@ -77,6 +77,7 @@ jobs:
     permissions:
       contents: read
       pull-requests: write
+      statuses: write  # post the `review` commit status onto the PR head (required check)
       id-token: write  # anthropics/claude-code-action mints its GitHub App token via OIDC
     steps:
       - uses: actions/checkout@v4
@@ -152,20 +153,28 @@ jobs:
           if-no-files-found: warn
 
       - id: gate
-        name: Policy gate (deterministic) → this job's success/failure IS the required `review` check
-        # Design B (ADR-0018): no GitHub approval is used. main requires 0 approvals and the
-        # `review` status check. This step encodes the verdict as the check result:
-        #   enabled + policy passes → auto-merge + exit 0 (check GREEN → mergeable)
-        #   enabled + held/schema  → comment + exit 1 (check RED → blocked; admin override only)
-        #   disabled (kill-switch) → advisory comment, no auto-merge, exit 0 (GREEN, non-blocking)
+        name: Policy gate (deterministic) → posts the required `review` commit status on the PR head
+        # Design B (ADR-0018): no GitHub approval. main requires 0 approvals and the `review`
+        # status check. Because this workflow is workflow_run-triggered, its own check-run lands on
+        # main, not the PR head — so the gate explicitly POSTS a `review` commit status onto the PR
+        # head SHA, which is what branch protection matches:
+        #   enabled + policy passes → status success + auto-merge
+        #   enabled + held/schema  → status failure (PR blocked; admin override only)
+        #   disabled (kill-switch) → status success, no auto-merge (human merges manually)
         env:
           GH_TOKEN: ${{ github.token }}
           PR: ${{ needs.guard.outputs.pr_number }}
           REPO: ${{ github.repository }}
+          HEAD_SHA: ${{ needs.guard.outputs.head_sha }}
           TOUCHES_SCHEMA: ${{ steps.diff.outputs.touches_schema }}
         run: |
           set -euo pipefail
           cfg() { yq -r "$1" .github/claude/config.yml; }
+          # Post the `review` commit status onto the PR head (the branch-protection required check).
+          post_status() { # <state> <description>
+            gh api -X POST "repos/$REPO/statuses/$HEAD_SHA" \
+              -f state="$1" -f context="review" -f description="$2" >/dev/null
+          }
           ENABLED=$(cfg '.auto_approve.enabled')
           MIN=$(cfg '.auto_approve.min_quality_score')
 
@@ -187,6 +196,7 @@ jobs:
 
           # Kill-switch: advisory only, never blocks or auto-merges. Humans merge manually.
           if [ "$ENABLED" != "true" ]; then
+            post_status success "advisory (auto-approval disabled); score ${SCORE}"
             gh pr comment "$PR" --body "🤖 Claude review (advisory — auto-approval disabled in config). score ${SCORE}. See review above; merge is manual. (ADR-0018)"
             echo "auto-approval disabled → advisory, non-blocking."
             exit 0
@@ -200,11 +210,13 @@ jobs:
 
           if [ -z "$REASON" ]; then
             echo "Policy passed for PR #$PR (score=$SCORE, no blocking findings) → enabling auto-merge."
+            post_status success "policy passed (score ${SCORE}, no blocking findings)"
             gh pr merge "$PR" --auto --squash || echo "auto-merge enable failed (not fatal)."
             gh pr comment "$PR" --body "🤖 Claude review: **policy passed** (score ${SCORE}, no blocking findings, no schema change). Auto-merge enabled. (ADR-0018)"
             exit 0
           else
             echo "Holding PR #$PR for a human: $REASON"
+            post_status failure "held: ${REASON} (score ${SCORE})"
             gh pr comment "$PR" --body "🤖 Claude review: **held for a human** — ${REASON}. Review comments above; admin merge required. (score ${SCORE}, ADR-0018)"
             exit 1
           fi
