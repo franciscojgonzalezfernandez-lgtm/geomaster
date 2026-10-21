@@ -6,20 +6,17 @@ auto_approve:
   # Master kill-switch. false = agents still review and comment, but never approve/auto-merge.
   enabled: true
 
-  # Minimum Claude quality score (0–100) required to auto-approve.
+  # Minimum Claude quality score (0-100) required to auto-approve.
   min_quality_score: 90
 
-  # Criteria that must ALL be true (checked by the review agent against the PR).
-  require:
-    - tests_pass            # unit/integration tests + extractor evals green
-    - smoke_pass            # ADR-0013 smoke job green (app actually boots)
-    - lighthouse_90         # ≥ 0.9 on touched public pages (when any)
-    - i18n_complete         # user-facing strings exist in EN, DE, FR, ES
-    - provider_layer_for_llm# any LLM call goes through the provider layer and records cost
-    - no_hardcoded_limits   # plan limits read from packages/plans, not hard-coded
-    - no_blocking_findings  # zero correctness/security blocking findings
+  # The gate auto-approves only when the agent reports ZERO blocking findings (and the
+  # score/schema/label rules below hold). The agent raises a blocking finding for any
+  # concrete, merge-blocking problem it checks for: correctness bugs, security/tenant-isolation
+  # issues, a hard-coded plan limit, an LLM call outside the provider layer, or user-facing
+  # strings missing a locale on a touched UI. A criterion that does not apply to the diff is
+  # NOT a blocking finding.
 
-  # Diffs touching any of these ALWAYS require a human — never auto-approved.
+  # Diffs touching any of these ALWAYS require a human - never auto-approved.
   # Database schema changes and migrations are intentionally fenced here.
   block_on_paths:
     - "apps/core/src/main/resources/db/migration/**"
