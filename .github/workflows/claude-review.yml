@@ -77,6 +77,7 @@ jobs:
     permissions:
       contents: read
       pull-requests: write
+      id-token: write  # anthropics/claude-code-action mints its GitHub App token via OIDC
     steps:
       - uses: actions/checkout@v4
         with:
