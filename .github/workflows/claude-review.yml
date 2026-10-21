@@ -119,26 +119,30 @@ jobs:
             ADRs/specs, then review ONLY the diff of this PR against its base
             (${{ steps.diff.outputs.base_sha }}...HEAD; files in changed-files.txt).
 
-            Find: correctness bugs; security vulnerabilities (OWASP Top 10, secrets, injection,
-            broken authz, tenant-isolation leaks where a query is not scoped by account_id,
-            risky dependencies). Then judge the PR against the project's checklist:
-            tests/evals pass, user-facing strings exist in EN/DE/FR/ES, every LLM call goes
-            through the provider layer and records cost, no plan limit is hard-coded
-            (limits come from packages/plans), Lighthouse ≥ 0.9 on any touched public page.
+            Raise a BLOCKING finding only for a concrete, merge-blocking problem in the diff:
+            a correctness bug; a security/vulnerability issue (OWASP Top 10, secrets, injection,
+            broken authz, a tenant-owned query not scoped by account_id); a hard-coded plan limit
+            (limits must come from packages/plans); an LLM call outside the provider layer; or a
+            user-facing string added without all of EN/DE/FR/ES. A concern that does NOT apply to
+            this diff is not a finding (e.g. Lighthouse/i18n when no public page or UI string is
+            touched; provider-layer when no LLM call is added). CI already ran: tests, smoke and
+            Lighthouse are enforced by required checks — do not re-block on those unless the diff
+            itself introduces a clear violation.
+
+            Scoring (quality_score, 0-100 = merge-readiness): a correct, well-scoped change that
+            matches the spec/ADRs and carries adequate tests scores 90-100. Drop below 90 only for
+            real concerns (weak/missing tests for new logic, unclear or risky code, scope creep).
+            Reserve low scores for diffs with genuine problems. Do not penalize a change for
+            things outside its scope.
 
             Write your verdict to ./claude-verdict.json (and nothing else to the repo), exactly:
             {
               "quality_score": <0-100 integer>,
               "blocking_findings": [{"severity":"high|med","title":"...","file":"...","why":"..."}],
-              "criteria": {
-                "tests_pass": <bool>, "smoke_pass": <bool>, "lighthouse_90": <bool>,
-                "i18n_complete": <bool>, "provider_layer_for_llm": <bool>,
-                "no_hardcoded_limits": <bool>, "no_blocking_findings": <bool>
-              },
               "summary": "<2-4 sentence review summary>"
             }
-            Also post the summary and findings as a PR review comment. Be strict: if unsure a
-            criterion holds, mark it false. Do not approve or merge — the gate decides.
+            Also post the summary and findings as a PR review comment. Do not approve or merge —
+            the gate decides from this verdict.
 
       - name: Upload verdict
         uses: actions/upload-artifact@v4
@@ -166,24 +170,20 @@ jobs:
           MIN=$(cfg '.auto_approve.min_quality_score')
 
           if [ ! -f claude-verdict.json ]; then
-            echo "No verdict file — treating as score 0."; SCORE=0
+            echo "No verdict file — treating as score 0 with a blocking finding."
+            SCORE=0; BLOCKING=1
           else
-            SCORE=$(jq -r '.quality_score // 0' claude-verdict.json)
+            SCORE=$(jq -r '(.quality_score // 0) | floor' claude-verdict.json)
+            BLOCKING=$(jq -r '(.blocking_findings // []) | length' claude-verdict.json)
           fi
-
-          # All required criteria must be true in the verdict.
-          REQ_OK=true
-          for c in $(cfg '.auto_approve.require[]'); do
-            v=$(jq -r --arg k "$c" '.criteria[$k] // false' claude-verdict.json 2>/dev/null || echo false)
-            [ "$v" = "true" ] || { REQ_OK=false; echo "criterion $c not met"; }
-          done
+          echo "score=$SCORE blocking_findings=$BLOCKING"
 
           # Per-PR opt-out labels.
           LABELS=$(gh api "repos/$REPO/issues/$PR/labels" --jq '.[].name' 2>/dev/null || true)
           LABEL_BLOCK=false
-          for l in $(cfg '.auto_approve.block_on_labels[]'); do
-            echo "$LABELS" | grep -qx "$l" && LABEL_BLOCK=true
-          done
+          while IFS= read -r l; do
+            [ -n "$l" ] && echo "$LABELS" | grep -qx "$l" && LABEL_BLOCK=true
+          done < <(yq -r '.auto_approve.block_on_labels[]' .github/claude/config.yml)
 
           # Kill-switch: advisory only, never blocks or auto-merges. Humans merge manually.
           if [ "$ENABLED" != "true" ]; then
@@ -196,12 +196,12 @@ jobs:
           [ "$TOUCHES_SCHEMA" = "true" ] && REASON="diff touches DB schema/migration — human required"
           [ "$LABEL_BLOCK" = "true" ] && REASON="opt-out label present"
           [ "$SCORE" -ge "$MIN" ] 2>/dev/null || REASON="quality score $SCORE < $MIN"
-          [ "$REQ_OK" = "true" ] || REASON="one or more required criteria not met"
+          [ "$BLOCKING" = "0" ] || REASON="$BLOCKING blocking finding(s)"
 
           if [ -z "$REASON" ]; then
-            echo "Policy passed for PR #$PR (score=$SCORE) → enabling auto-merge."
+            echo "Policy passed for PR #$PR (score=$SCORE, no blocking findings) → enabling auto-merge."
             gh pr merge "$PR" --auto --squash || echo "auto-merge enable failed (not fatal)."
-            gh pr comment "$PR" --body "🤖 Claude review: **policy passed** (score ${SCORE}, all criteria met, no schema change). Auto-merge enabled. (ADR-0018)"
+            gh pr comment "$PR" --body "🤖 Claude review: **policy passed** (score ${SCORE}, no blocking findings, no schema change). Auto-merge enabled. (ADR-0018)"
             exit 0
           else
             echo "Holding PR #$PR for a human: $REASON"

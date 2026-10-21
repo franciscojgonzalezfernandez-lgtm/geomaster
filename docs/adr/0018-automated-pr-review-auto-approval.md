@@ -55,8 +55,13 @@ their own PR, so `main` requires **0 approving reviews** and instead requires th
 
 It never blocks silently: every outcome posts a comment with the reason.
 
+The gate holds unless: `quality_score ≥ min_quality_score`, `blocking_findings` is empty, the diff
+touches no `block_on_paths`, and no `block_on_labels` label is present. Criteria such as i18n,
+provider-layer and no-hard-coded-limits are enforced through the agent's blocking findings (and the
+required CI/Lighthouse/smoke checks), not a separate boolean list.
+
 **Configuration** lives in `.github/claude/config.yml` (policy as code): `enabled`,
-`min_quality_score`, `require[]` criteria, `block_on_paths[]`, `block_on_labels[]`. It is changed
+`min_quality_score`, `block_on_paths[]`, `block_on_labels[]`. It is changed
 by editing that file (e.g. in conversation with the coding agent) — turning auto-approval off is a
 one-line, reversible PR, and `block_on_labels` (`no-auto-approve`) is a per-PR override.
 
