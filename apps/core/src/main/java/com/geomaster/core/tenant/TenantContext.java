@@ -13,8 +13,14 @@ import java.util.function.Supplier;
  */
 public final class TenantContext {
 
-    /** The authenticated tenant carried by a service token: the account being acted on and its plan. */
-    public record Tenant(UUID accountId, String planId) {}
+    /** The authenticated identity carried by a service token: the user, the account acted on and its plan. */
+    public record Tenant(UUID userId, UUID accountId, String planId) {}
+
+    /** A body that may throw a checked exception (e.g. a servlet {@code FilterChain}). */
+    @FunctionalInterface
+    public interface ThrowingRunnable<X extends Throwable> {
+        void run() throws X;
+    }
 
     private static final ScopedValue<Tenant> CURRENT = ScopedValue.newInstance();
 
@@ -28,6 +34,14 @@ public final class TenantContext {
     /** Evaluate {@code body} with {@code tenant} bound as the current tenant and return its result. */
     public static <T> T supply(Tenant tenant, Supplier<T> body) {
         return ScopedValue.where(CURRENT, tenant).call(() -> body.get());
+    }
+
+    /** Run {@code body}, which may throw a checked exception, with {@code tenant} bound. */
+    public static <X extends Throwable> void runChecked(Tenant tenant, ThrowingRunnable<X> body) throws X {
+        ScopedValue.where(CURRENT, tenant).call(() -> {
+            body.run();
+            return null;
+        });
     }
 
     /** The current tenant, or fail if none is bound (a query attempted outside a tenant scope). */
