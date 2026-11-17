@@ -44,8 +44,10 @@ that:
 - auto-approval is **enabled in configuration** and the PR carries no opt-out label.
 
 **Enforcement is a required status check, not a GitHub approval.** A solo author cannot approve
-their own PR, so `main` requires **0 approving reviews** and instead requires the gate job's
-`review` check. The gate encodes the verdict as that check:
+their own PR, so `main` requires **0 approving reviews** and instead requires a `review` status
+check. Because this workflow is `workflow_run`-triggered, its own check-run attaches to the default
+branch rather than the PR head, so the gate explicitly **posts a `review` commit status onto the PR
+head SHA** — that status is what branch protection matches. The gate encodes the verdict as it:
 - policy holds → enable auto-merge and exit success → `review` **green** → PR merges once all
   required checks (ADR-0013) are green;
 - held or schema/migration diff → comment the reason and exit failure → `review` **red** → PR
@@ -55,8 +57,13 @@ their own PR, so `main` requires **0 approving reviews** and instead requires th
 
 It never blocks silently: every outcome posts a comment with the reason.
 
+The gate holds unless: `quality_score ≥ min_quality_score`, `blocking_findings` is empty, the diff
+touches no `block_on_paths`, and no `block_on_labels` label is present. Criteria such as i18n,
+provider-layer and no-hard-coded-limits are enforced through the agent's blocking findings (and the
+required CI/Lighthouse/smoke checks), not a separate boolean list.
+
 **Configuration** lives in `.github/claude/config.yml` (policy as code): `enabled`,
-`min_quality_score`, `require[]` criteria, `block_on_paths[]`, `block_on_labels[]`. It is changed
+`min_quality_score`, `block_on_paths[]`, `block_on_labels[]`. It is changed
 by editing that file (e.g. in conversation with the coding agent) — turning auto-approval off is a
 one-line, reversible PR, and `block_on_labels` (`no-auto-approve`) is a per-PR override.
 
