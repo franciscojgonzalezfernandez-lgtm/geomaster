@@ -143,7 +143,8 @@ jobs:
           path: claude-verdict.json
           if-no-files-found: warn
 
-  # Deterministic policy gate (ADR-0018), on a FRESH runner the agent never touched. Policy
+  # Deterministic policy gate (ADR-0018), on a FRESH runner the agent never touched. Skipped when
+  # the run is cancelled (a newer run for the same head supersedes it). Policy
   # (.github/claude/config.yml) comes from the default branch, never from the PR, so a PR cannot
   # relax the rules that judge it. Posts the required `review` commit status on the PR head
   # (workflow_run check-runs land on main, not the PR head):
@@ -153,7 +154,7 @@ jobs:
   #   disabled (kill-switch) → status success, no auto-merge (human merges manually)
   gate:
     needs: [guard, review]
-    if: ${{ always() && needs.guard.outputs.proceed == 'true' && needs.guard.outputs.has_key == 'true' }}
+    if: ${{ !cancelled() && needs.guard.outputs.proceed == 'true' && needs.guard.outputs.has_key == 'true' }}
     runs-on: ubuntu-latest
     outputs:
       automerge: ${{ steps.gate.outputs.automerge }}
