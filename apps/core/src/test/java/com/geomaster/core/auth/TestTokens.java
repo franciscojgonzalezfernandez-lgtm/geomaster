@@ -17,15 +17,15 @@ import java.util.Map;
 import java.util.UUID;
 
 /** Mints Ed25519 JWS tokens the way the Better Auth JWT plugin does, for tests only. */
-final class TestTokens {
+public final class TestTokens {
 
-    static final String ISSUER = "https://web.test";
-    static final String AUDIENCE = "https://web.test";
+    public static final String ISSUER = "https://web.test";
+    public static final String AUDIENCE = "https://web.test";
 
     final KeyPair keyPair;
     final String kid;
 
-    TestTokens(String kid) {
+    public TestTokens(String kid) {
         try {
             this.keyPair = KeyPairGenerator.getInstance("Ed25519").generateKeyPair();
         } catch (Exception e) {
@@ -53,7 +53,7 @@ final class TestTokens {
         return sign("EdDSA", kid, claims(now, Duration.ofMinutes(2), UUID.randomUUID().toString(), UUID.randomUUID().toString(), "pro"));
     }
 
-    static String claims(Instant iat, Duration life, String sub, String acct, String plan) {
+    public static String claims(Instant iat, Duration life, String sub, String acct, String plan) {
         StringBuilder sb = new StringBuilder("{\"iss\":\"" + ISSUER + "\",\"aud\":\"" + AUDIENCE + "\"");
         sb.append(",\"iat\":").append(iat.getEpochSecond());
         sb.append(",\"exp\":").append(iat.plus(life).getEpochSecond());
@@ -63,7 +63,7 @@ final class TestTokens {
         return sb.append('}').toString();
     }
 
-    String sign(String alg, String kid, String claimsJson) {
+    public String sign(String alg, String kid, String claimsJson) {
         String header = "{\"alg\":\"" + alg + "\",\"kid\":\"" + kid + "\",\"typ\":\"JWT\"}";
         String input = b64(header) + "." + b64(claimsJson);
         try {
@@ -80,7 +80,7 @@ final class TestTokens {
         return Base64URL.encode(json.getBytes(StandardCharsets.UTF_8)).toString();
     }
 
-    SigningKeys keys() {
+    public SigningKeys keys() {
         Map<String, java.security.PublicKey> m = Map.of(kid, keyPair.getPublic());
         return k -> java.util.Optional.ofNullable(m.get(k));
     }

@@ -65,6 +65,28 @@ public class ProjectRepository {
                 .optional();
     }
 
+    public Optional<Project> findByDomain(String domain) {
+        UUID accountId = TenantContext.accountId();
+        return db.sql("""
+                SELECT id, account_id, domain, country, region, status, created_at
+                FROM project
+                WHERE account_id = :accountId AND domain = :domain
+                """)
+                .param("accountId", accountId)
+                .param("domain", domain)
+                .query(Project.class)
+                .optional();
+    }
+
+    /** Projects that count against the plan's {@code domains} limit (archived ones do not). */
+    public int countActiveForCurrentAccount() {
+        UUID accountId = TenantContext.accountId();
+        return db.sql("SELECT count(*) FROM project WHERE account_id = :accountId AND status <> 'archived'")
+                .param("accountId", accountId)
+                .query(Integer.class)
+                .single();
+    }
+
     public List<Project> listForCurrentAccount() {
         UUID accountId = TenantContext.accountId();
         return db.sql("""

@@ -52,6 +52,23 @@ class ServiceTokenFilterTest {
         assertRejected("Bearer " + new TestTokens("k1").valid(NOW)); // signed by another key
     }
 
+    @Test
+    void accountLessTokenOnlyProvisions() throws Exception {
+        String jwt = tokens.sign("EdDSA", "k1", TestTokens.claims(NOW, Duration.ofMinutes(1), UUID.randomUUID().toString(), null, null));
+        AtomicBoolean ran = new AtomicBoolean(false);
+
+        MockHttpServletRequest provision = new MockHttpServletRequest("POST", "/v1/users/me");
+        provision.addHeader("Authorization", "Bearer " + jwt);
+        MockHttpServletResponse ok = new MockHttpServletResponse();
+        filter.doFilter(provision, ok, (req, r) -> ran.set(true));
+        assertEquals(200, ok.getStatus());
+        assertTrue(ran.getAndSet(false));
+
+        MockHttpServletResponse denied = run("Bearer " + jwt, (req, r) -> ran.set(true)); // GET /v1/projects
+        assertEquals(401, denied.getStatus());
+        assertFalse(ran.get());
+    }
+
     private void assertRejected(String authorization) throws Exception {
         AtomicBoolean handlerRan = new AtomicBoolean(false);
         MockHttpServletResponse res = run(authorization, (req, r) -> handlerRan.set(true));

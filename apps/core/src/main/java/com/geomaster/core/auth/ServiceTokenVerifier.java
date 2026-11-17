@@ -14,15 +14,23 @@ import java.util.UUID;
 
 /**
  * Verifies the web→core service token (ADR-0017, REQ-4/REQ-5): an EdDSA (Ed25519) JWS signed by
- * the web app's Better Auth JWT plugin, carrying {@code sub} (user id), {@code acct} (account id)
- * and {@code plan}. Signature is checked with the JDK's native Ed25519 provider against the key
+ * the web app's Better Auth JWT plugin, carrying {@code sub} (user id) and, once the user has an
+ * account, {@code acct} (account id) and {@code plan}. Signature is checked with the JDK's native Ed25519 provider against the key
  * named by {@code kid}; then {@code iss}, {@code aud}, {@code exp}, {@code iat} and a maximum
  * lifetime are enforced. Any failure throws {@link InvalidServiceTokenException}.
  */
 public final class ServiceTokenVerifier {
 
-    /** The verified identity carried by a service token. */
-    public record VerifiedToken(UUID userId, UUID accountId, String planId) {}
+    /**
+     * The verified identity carried by a service token. {@code accountId} and {@code planId} are
+     * {@code null} only on a provisioning token, minted before the user's first account exists
+     * (REQ-2); {@link ServiceTokenFilter} accepts such a token only on {@code POST /v1/users/me}.
+     */
+    public record VerifiedToken(UUID userId, UUID accountId, String planId) {
+        public boolean hasAccount() {
+            return accountId != null;
+        }
+    }
 
     private final ServiceTokenProperties props;
     private final SigningKeys keys;
@@ -66,10 +74,12 @@ public final class ServiceTokenVerifier {
         if (claims.getAudience() == null || !claims.getAudience().contains(props.audience())) {
             throw new InvalidServiceTokenException("wrong audience");
         }
-        return new VerifiedToken(
-                uuidClaim(claims.getSubject(), "sub"),
-                uuidClaim(stringClaim(claims, "acct"), "acct"),
-                requireText(stringClaim(claims, "plan"), "plan"));
+        UUID userId = uuidClaim(claims.getSubject(), "sub");
+        String acct = stringClaim(claims, "acct");
+        if (acct == null) {
+            return new VerifiedToken(userId, null, null); // provisioning token (first sign-in)
+        }
+        return new VerifiedToken(userId, uuidClaim(acct, "acct"), requireText(stringClaim(claims, "plan"), "plan"));
     }
 
     private static boolean signatureValid(SignedJWT jwt, PublicKey key) {
