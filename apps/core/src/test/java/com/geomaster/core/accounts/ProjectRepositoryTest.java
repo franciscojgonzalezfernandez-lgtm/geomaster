@@ -58,6 +58,6 @@ class ProjectRepositoryTest {
     }
 
     private static Tenant tenant(UUID accountId) {
-        return new Tenant(accountId, "free");
+        return new Tenant(UUID.randomUUID(), accountId, "free");
     }
 }
