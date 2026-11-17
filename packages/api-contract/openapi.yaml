@@ -13,7 +13,7 @@ security:
 paths:
   /v1/account:
     delete:
-      operationId: delete
+      operationId: delete_1
       responses:
         "204":
           description: Account deleted
@@ -157,6 +157,166 @@ paths:
       summary: Get one of the account's projects
       tags:
       - projects-controller
+  /v1/projects/{projectId}/prompts:
+    get:
+      operationId: list_1
+      parameters:
+      - in: path
+        name: projectId
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PromptResponse"
+          description: Prompts
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+          description: Missing or invalid service token
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+          description: No such project in this account
+      summary: List the project's active prompts
+      tags:
+      - prompts-controller
+    post:
+      operationId: create_1
+      parameters:
+      - in: path
+        name: projectId
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreatePromptRequest"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PromptResponse"
+          description: Prompt created
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+          description: Missing or invalid service token
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+          description: No such project in this account
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+          description: "Invalid input (field) or plan limit exceeded (limit, allowed)"
+      summary: Add a prompt (one language) within the plan's prompts limit
+      tags:
+      - prompts-controller
+  /v1/projects/{projectId}/prompts/{promptId}:
+    delete:
+      operationId: delete
+      parameters:
+      - in: path
+        name: projectId
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - in: path
+        name: promptId
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "204":
+          description: Prompt deleted
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+          description: Missing or invalid service token
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+          description: No such prompt in this project
+      summary: "Delete a prompt; it is not asked again, past answers stay"
+      tags:
+      - prompts-controller
+    patch:
+      operationId: update_1
+      parameters:
+      - in: path
+        name: projectId
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - in: path
+        name: promptId
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdatePromptRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PromptResponse"
+          description: Updated prompt
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+          description: Missing or invalid service token
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+          description: No such prompt in this project
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+          description: Invalid input (field)
+      summary: "Edit a prompt; new text creates a new version, old answers keep theirs"
+      tags:
+      - prompts-controller
   /v1/users/me:
     patch:
       operationId: update
@@ -243,6 +403,15 @@ components:
             type: string
         region:
           type: string
+    CreatePromptRequest:
+      type: object
+      properties:
+        locale:
+          type: string
+        text:
+          type: string
+        topic:
+          type: string
     ProblemDetail:
       type: object
       properties:
@@ -283,6 +452,27 @@ components:
           type: string
         status:
           type: string
+    PromptResponse:
+      type: object
+      properties:
+        createdAt:
+          type: string
+          format: date-time
+        id:
+          type: string
+          format: uuid
+        locale:
+          type: string
+        text:
+          type: string
+        topic:
+          type: string
+        updatedAt:
+          type: string
+          format: date-time
+        version:
+          type: integer
+          format: int32
     ProvisionResponse:
       type: object
       properties:
@@ -290,6 +480,13 @@ components:
           $ref: "#/components/schemas/AccountResponse"
         user:
           $ref: "#/components/schemas/UserResponse"
+    UpdatePromptRequest:
+      type: object
+      properties:
+        text:
+          type: string
+        topic:
+          type: string
     UpdateUserRequest:
       type: object
       properties:

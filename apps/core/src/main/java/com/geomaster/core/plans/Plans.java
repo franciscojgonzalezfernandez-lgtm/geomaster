@@ -115,6 +115,11 @@ public final class Plans {
         require(planId, "languages", get(planId).languages(), languages);
     }
 
+    /** Reject when the account would measure more prompts (each prompt is one language) than allowed. */
+    public void requirePrompts(String planId, int promptsAfterCreate) {
+        require(planId, "prompts", get(planId).prompts(), promptsAfterCreate);
+    }
+
     private static void require(String planId, String limit, Integer allowed, int requested) {
         if (!Plan.within(allowed, requested)) {
             throw new PlanLimitExceededException(planId, limit, allowed);
