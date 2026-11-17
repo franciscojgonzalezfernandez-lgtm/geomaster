@@ -35,7 +35,10 @@ jobs:
 
           if [ "$ACTION" = "synchronize" ]; then
             # New commits invalidate a previous human approval.
-            gh pr edit "$PR" --repo "$REPO" --remove-label "$LABEL" >/dev/null 2>&1 || true
+            if echo "$(gh pr view "$PR" --repo "$REPO" --json labels --jq '.labels[].name')" | grep -qx "$LABEL"; then
+              gh pr edit "$PR" --repo "$REPO" --remove-label "$LABEL" >/dev/null \
+                || echo "::warning::could not remove '$LABEL' after a push (approval is per-SHA anyway)"
+            fi
             exit 0
           fi
 

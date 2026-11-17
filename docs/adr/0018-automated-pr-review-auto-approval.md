@@ -61,13 +61,21 @@ It never blocks silently: every outcome posts a comment with the reason.
 `human_approval_label` (`human-approved`). `human-approval.yml` (`pull_request_target`, runs from
 the default branch, never checks out PR code) verifies the sender is an admin, posts a green
 `review` status on the current head SHA and enables auto-merge. Any new push removes the label, so
-approval is per commit; the gate also honours the label if it re-runs on an approved head. Branch
+approval is per commit (the status is bound to the SHA anyway). The gate never overwrites a
+`review` status that human-approval.yml posted on the same head, and it never reads the label
+itself, so only an admin-verified labelling can approve. Branch
 protection bypass is therefore reserved for emergencies, never the normal path.
 
 **Required checks must always report.** `web-smoke` and `core-smoke` are required, so `CI smoke`
 has no `paths` filter on `pull_request`: a filtered-out workflow never reports, leaves the checks
 "Expected" forever and also never triggers this review (it is `workflow_run` on CI). Workflows
 that are not required checks (`CI core`, `CI web`) may keep path filters.
+
+**Trust boundaries.** The agent job checks out untrusted PR code and holds no `statuses` or
+`contents: write` token. The gate runs in a separate job on a fresh runner, reads the verdict only
+from the uploaded artifact and reads the policy (`config.yml`) from the default branch, so a PR
+cannot relax the rules that judge it; protected paths are matched as globs against the PR's file
+list from the API.
 
 **Merging runs in its own job.** Enabling auto-merge (or merging an already-green PR) needs
 `contents: write`; that permission is granted only to a separate `automerge` job that runs after a
