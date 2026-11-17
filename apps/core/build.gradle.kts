@@ -51,3 +51,16 @@ tasks.processResources {
 		into("plans")
 	}
 }
+
+// Regenerate packages/api-contract/openapi.yaml from the code (ADR-0016). Same test that CI runs
+// as the drift check, in write mode. Needs Docker (Testcontainers).
+tasks.register<Test>("updateApiContract") {
+	description = "Regenerates packages/api-contract/openapi.yaml from springdoc."
+	group = "documentation"
+	testClassesDirs = sourceSets["test"].output.classesDirs
+	classpath = sourceSets["test"].runtimeClasspath
+	useJUnitPlatform()
+	filter { includeTestsMatching("com.geomaster.core.api.OpenApiContractTest") }
+	systemProperty("updateApiContract", "true")
+	outputs.upToDateWhen { false }
+}
