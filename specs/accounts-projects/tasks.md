@@ -14,7 +14,7 @@ Ordered so the slice is demonstrable end-to-end as early as possible.
       (REQ-11; ADR-0010)
 - [x] T5 — Core REST: `POST/PATCH /v1/users/me`, `GET /v1/account`, `POST/GET /v1/projects`
       with domain normalisation, idempotent create, plan-limit checks. (REQ-2, REQ-3, REQ-8..REQ-13, REQ-15)
-- [ ] T6 — springdoc OpenAPI → `packages/api-contract/openapi.yaml`; `openapi-typescript` types;
+- [x] T6 — springdoc OpenAPI → `packages/api-contract/openapi.yaml`; `openapi-typescript` types;
       CI drift check. (ADR-0016)
 - [ ] T7 — Core tests (JUnit + Testcontainers): provisioning, returning-user reuse, tenant
       isolation 404, idempotent create, plan-limit 422, invalid-token 401. (REQ-2..REQ-13)
@@ -32,5 +32,5 @@ Ordered so the slice is demonstrable end-to-end as early as possible.
       UP (actuator already in `build.gradle.kts`). Done in `.github/workflows/ci-smoke.yml`. (ADR-0013)
 - [ ] T14 — Web smoke currently asserts `/` 200 (`ci-smoke.yml`); switch target to `/[locale]/signin`
       once the sign-in route lands. (ADR-0013 smoke gate)
-- [ ] T15 — Contract-drift CI: gradle task exports springdoc OpenAPI, CI regenerates and
+- [x] T15 — Contract-drift CI: gradle task exports springdoc OpenAPI, CI regenerates and
       `git diff --exit-code` against `packages/api-contract/openapi.yaml`. (ADR-0016)
