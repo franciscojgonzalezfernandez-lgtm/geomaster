@@ -1,5 +1,10 @@
 package com.geomaster.core.accounts;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import org.springframework.http.ProblemDetail;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -39,6 +44,11 @@ public class AccountsController {
     }
 
     /** First-sign-in provisioning: 201 when the personal account was created, 200 when it existed. */
+    @Operation(summary = "Provision the signed-in user's personal account (idempotent)")
+    @ApiResponse(responseCode = "201", description = "Account created")
+    @ApiResponse(responseCode = "200", description = "Account already existed")
+    @ApiResponse(responseCode = "401", description = "Missing or invalid service token", content = @Content(mediaType = "application/problem+json", schema = @Schema(implementation = ProblemDetail.class)))
+    @ApiResponse(responseCode = "404", description = "User not found", content = @Content(mediaType = "application/problem+json", schema = @Schema(implementation = ProblemDetail.class)))
     @PostMapping("/users/me")
     public ResponseEntity<ProvisionResponse> provision() {
         AccountService.Provisioned p = service.provisionCurrentUser();
@@ -46,11 +56,19 @@ public class AccountsController {
                 .body(new ProvisionResponse(UserResponse.of(p.user()), AccountResponse.of(p.account())));
     }
 
+    @Operation(summary = "Set the interface language")
+    @ApiResponse(responseCode = "200", description = "Updated user")
+    @ApiResponse(responseCode = "401", description = "Missing or invalid service token", content = @Content(mediaType = "application/problem+json", schema = @Schema(implementation = ProblemDetail.class)))
+    @ApiResponse(responseCode = "422", description = "Unsupported interface language", content = @Content(mediaType = "application/problem+json", schema = @Schema(implementation = ProblemDetail.class)))
     @PatchMapping("/users/me")
     public UserResponse update(@RequestBody UpdateUserRequest body) {
         return UserResponse.of(service.setInterfaceLocale(body == null ? null : body.interfaceLocale()));
     }
 
+    @Operation(summary = "The current account and its plan")
+    @ApiResponse(responseCode = "200", description = "Current account")
+    @ApiResponse(responseCode = "401", description = "Missing or invalid service token", content = @Content(mediaType = "application/problem+json", schema = @Schema(implementation = ProblemDetail.class)))
+    @ApiResponse(responseCode = "404", description = "Not a member of the token's account", content = @Content(mediaType = "application/problem+json", schema = @Schema(implementation = ProblemDetail.class)))
     @GetMapping("/account")
     public AccountResponse account() {
         return AccountResponse.of(service.currentAccount());

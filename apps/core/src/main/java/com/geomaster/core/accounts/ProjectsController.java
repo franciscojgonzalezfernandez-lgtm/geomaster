@@ -1,5 +1,10 @@
 package com.geomaster.core.accounts;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import org.springframework.http.ProblemDetail;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -36,6 +41,11 @@ public class ProjectsController {
     }
 
     /** 201 for a new project; 200 with the existing one when the domain is already there (REQ-10). */
+    @Operation(summary = "Create a project (idempotent on the normalised domain)")
+    @ApiResponse(responseCode = "201", description = "Project created")
+    @ApiResponse(responseCode = "200", description = "Project with this domain already existed")
+    @ApiResponse(responseCode = "401", description = "Missing or invalid service token", content = @Content(mediaType = "application/problem+json", schema = @Schema(implementation = ProblemDetail.class)))
+    @ApiResponse(responseCode = "422", description = "Invalid input (field) or plan limit exceeded (limit, allowed)", content = @Content(mediaType = "application/problem+json", schema = @Schema(implementation = ProblemDetail.class)))
     @PostMapping
     public ResponseEntity<ProjectResponse> create(@RequestBody CreateProjectRequest body) {
         CreateProjectRequest b = body == null ? new CreateProjectRequest(null, null, null, null) : body;
@@ -43,11 +53,18 @@ public class ProjectsController {
         return ResponseEntity.status(r.created() ? HttpStatus.CREATED : HttpStatus.OK).body(ProjectResponse.of(r.view()));
     }
 
+    @Operation(summary = "List the account's projects")
+    @ApiResponse(responseCode = "200", description = "Projects")
+    @ApiResponse(responseCode = "401", description = "Missing or invalid service token", content = @Content(mediaType = "application/problem+json", schema = @Schema(implementation = ProblemDetail.class)))
     @GetMapping
     public List<ProjectResponse> list() {
         return service.list().stream().map(ProjectResponse::of).toList();
     }
 
+    @Operation(summary = "Get one of the account's projects")
+    @ApiResponse(responseCode = "200", description = "Project")
+    @ApiResponse(responseCode = "401", description = "Missing or invalid service token", content = @Content(mediaType = "application/problem+json", schema = @Schema(implementation = ProblemDetail.class)))
+    @ApiResponse(responseCode = "404", description = "No such project in this account", content = @Content(mediaType = "application/problem+json", schema = @Schema(implementation = ProblemDetail.class)))
     @GetMapping("/{id}")
     public ProjectResponse get(@PathVariable UUID id) {
         return ProjectResponse.of(service.get(id));
