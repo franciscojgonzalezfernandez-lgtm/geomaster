@@ -43,3 +43,11 @@ dependencies {
 tasks.withType<Test> {
 	useJUnitPlatform()
 }
+
+// Plan limits have one source of truth: packages/plans/plans.json (REQ-11, ADR-0010).
+// Copy it onto the classpath as plans/plans.json so the jar (and the Docker image) carry it.
+tasks.processResources {
+	from(rootProject.layout.projectDirectory.file("packages/plans/plans.json")) {
+		into("plans")
+	}
+}

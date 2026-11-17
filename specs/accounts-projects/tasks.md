@@ -10,7 +10,7 @@ Ordered so the slice is demonstrable end-to-end as early as possible.
       (REQ-6, REQ-7; ADR-0003, ADR-0005)
 - [x] T3 — `ServiceTokenFilter`: verify EdDSA JWT against cached web JWKS, populate `TenantContext`,
       401 on failure. (REQ-4, REQ-5; ADR-0017)
-- [ ] T4 — `Plans` component in core reading `packages/plans/plans.json`; no hard-coded limits.
+- [x] T4 — `Plans` component in core reading `packages/plans/plans.json`; no hard-coded limits.
       (REQ-11; ADR-0010)
 - [ ] T5 — Core REST: `POST/PATCH /v1/users/me`, `GET /v1/account`, `POST/GET /v1/projects`
       with domain normalisation, idempotent create, plan-limit checks. (REQ-2, REQ-3, REQ-8..REQ-13, REQ-15)

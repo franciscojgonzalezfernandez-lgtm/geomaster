@@ -4,6 +4,7 @@ WORKDIR /src
 COPY gradlew settings.gradle.kts ./
 COPY gradle gradle
 COPY apps/core apps/core
+COPY packages/plans/plans.json packages/plans/plans.json
 RUN ./gradlew :core:bootJar --no-daemon
 
 FROM eclipse-temurin:25-jre
