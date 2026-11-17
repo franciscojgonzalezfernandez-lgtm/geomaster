@@ -13,7 +13,10 @@ import java.util.function.Supplier;
  */
 public final class TenantContext {
 
-    /** The authenticated identity carried by a service token: the user, the account acted on and its plan. */
+    /**
+     * The authenticated identity carried by a service token: the user, the account acted on and its
+     * plan. {@code accountId}/{@code planId} are {@code null} only while provisioning a first account.
+     */
     public record Tenant(UUID userId, UUID accountId, String planId) {}
 
     /** A body that may throw a checked exception (e.g. a servlet {@code FilterChain}). */
@@ -54,6 +57,15 @@ public final class TenantContext {
 
     /** The current tenant's account id — the scope every tenant-owned query must filter by. */
     public static UUID accountId() {
-        return current().accountId();
+        UUID id = current().accountId();
+        if (id == null) {
+            throw new IllegalStateException("No account bound to the current context");
+        }
+        return id;
+    }
+
+    /** The authenticated user's id. */
+    public static UUID userId() {
+        return current().userId();
     }
 }

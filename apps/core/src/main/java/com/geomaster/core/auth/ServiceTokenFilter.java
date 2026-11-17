@@ -24,6 +24,7 @@ public final class ServiceTokenFilter extends OncePerRequestFilter {
 
     private static final Logger log = LoggerFactory.getLogger(ServiceTokenFilter.class);
     private static final String BEARER = "Bearer ";
+    static final String PROVISIONING_PATH = "/v1/users/me";
 
     private final ServiceTokenVerifier verifier;
 
@@ -48,6 +49,11 @@ public final class ServiceTokenFilter extends OncePerRequestFilter {
             unauthorized(response, "invalid token");
             return;
         }
+        if (!token.hasAccount() && !isProvisioning(request)) {
+            // An account-less token may only provision the user's first account (REQ-2).
+            unauthorized(response, "token has no account");
+            return;
+        }
         Tenant tenant = new Tenant(token.userId(), token.accountId(), token.planId());
         try {
             TenantContext.runChecked(tenant, () -> chain.doFilter(request, response));
@@ -56,6 +62,11 @@ public final class ServiceTokenFilter extends OncePerRequestFilter {
         } catch (Exception e) {
             throw new ServletException(e);
         }
+    }
+
+    private static boolean isProvisioning(HttpServletRequest request) {
+        String path = request.getRequestURI().substring(request.getContextPath().length());
+        return "POST".equals(request.getMethod()) && PROVISIONING_PATH.equals(path);
     }
 
     private static void unauthorized(HttpServletResponse response, String detail) throws IOException {

@@ -93,10 +93,18 @@ class ServiceTokenVerifierTest {
 
     @Test
     void rejectsMissingOrMalformedIdentityClaims() {
-        assertInvalid(tokens.sign("EdDSA", "k1", TestTokens.claims(NOW, Duration.ofMinutes(1), UUID.randomUUID().toString(), null, "pro")));
         assertInvalid(tokens.sign("EdDSA", "k1", TestTokens.claims(NOW, Duration.ofMinutes(1), UUID.randomUUID().toString(), "not-a-uuid", "pro")));
         assertInvalid(tokens.sign("EdDSA", "k1", TestTokens.claims(NOW, Duration.ofMinutes(1), null, UUID.randomUUID().toString(), "pro")));
         assertInvalid(tokens.sign("EdDSA", "k1", TestTokens.claims(NOW, Duration.ofMinutes(1), UUID.randomUUID().toString(), UUID.randomUUID().toString(), null)));
+    }
+
+    @Test
+    void acceptsAccountLessProvisioningToken() {
+        UUID user = UUID.randomUUID();
+        ServiceTokenVerifier.VerifiedToken t = verifier.verify(tokens.sign("EdDSA", "k1",
+                TestTokens.claims(NOW, Duration.ofMinutes(1), user.toString(), null, null)));
+        assertEquals(user, t.userId());
+        assertEquals(false, t.hasAccount());
     }
 
     @Test
