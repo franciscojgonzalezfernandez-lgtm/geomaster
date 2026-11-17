@@ -159,7 +159,8 @@ jobs:
         # main, not the PR head — so the gate explicitly POSTS a `review` commit status onto the PR
         # head SHA, which is what branch protection matches:
         #   enabled + policy passes → status success + auto-merge
-        #   enabled + held/schema  → status failure (PR blocked; admin override only)
+        #   enabled + held/schema  → status failure (PR blocked until a human adds the approval label)
+        #   approval label present → status success (a human already approved this head)
         #   disabled (kill-switch) → status success, no auto-merge (human merges manually)
         env:
           GH_TOKEN: ${{ github.token }}
@@ -202,6 +203,14 @@ jobs:
             exit 0
           fi
 
+          # A human already approved this head (label is cleared on every push, so it is per commit).
+          APPROVAL_LABEL=$(cfg '.auto_approve.human_approval_label // "human-approved"')
+          if echo "$LABELS" | grep -qx "$APPROVAL_LABEL"; then
+            post_status success "approved by a human (${APPROVAL_LABEL}); score ${SCORE}"
+            echo "Human approval label present → review green."
+            exit 0
+          fi
+
           REASON=""
           [ "$TOUCHES_SCHEMA" = "true" ] && REASON="diff touches DB schema/migration — human required"
           [ "$LABEL_BLOCK" = "true" ] && REASON="opt-out label present"
@@ -217,6 +226,6 @@ jobs:
           else
             echo "Holding PR #$PR for a human: $REASON"
             post_status failure "held: ${REASON} (score ${SCORE})"
-            gh pr comment "$PR" --body "🤖 Claude review: **held for a human** — ${REASON}. Review comments above; admin merge required. (score ${SCORE}, ADR-0018)"
+            gh pr comment "$PR" --body "🤖 Claude review: **held for a human** — ${REASON}. Review comments above. To approve, a repo admin adds the \`${APPROVAL_LABEL}\` label (no bypass needed). (score ${SCORE}, ADR-0018)"
             exit 1
           fi

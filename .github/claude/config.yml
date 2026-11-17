@@ -22,6 +22,11 @@ auto_approve:
     - "apps/core/src/main/resources/db/migration/**"
     - "**/*.sql"
 
+  # Human approval without bypassing branch protection: when the gate holds a PR, a repo admin
+  # adds this label and `human-approval.yml` posts a green `review` status for the current head.
+  # The label is removed automatically on every new push (approval is per commit).
+  human_approval_label: "human-approved"
+
   # A PR carrying any of these labels is never auto-approved (per-PR override).
   block_on_labels:
     - "no-auto-approve"
