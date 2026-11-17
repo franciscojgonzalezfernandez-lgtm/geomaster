@@ -14,6 +14,7 @@ import java.nio.file.Path;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
  * Contract drift check (ADR-0016): the OpenAPI document springdoc generates from the running core
@@ -39,6 +40,7 @@ class OpenApiContractTest {
     @Test
     void committedContractMatchesTheCode() throws Exception {
         String generated = HEADER + mvc.perform(get("/v3/api-docs.yaml"))
+                .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
 
         if (Boolean.getBoolean("updateApiContract")) {

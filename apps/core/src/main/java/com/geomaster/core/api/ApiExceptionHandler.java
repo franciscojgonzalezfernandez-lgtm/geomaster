@@ -15,6 +15,11 @@ public class ApiExceptionHandler {
         return ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, e.getMessage());
     }
 
+    @ExceptionHandler(ForbiddenException.class)
+    ProblemDetail forbidden(ForbiddenException e) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, e.getMessage());
+    }
+
     @ExceptionHandler(InvalidInputException.class)
     ProblemDetail invalid(InvalidInputException e) {
         ProblemDetail p = ProblemDetail.forStatusAndDetail(HttpStatus.UNPROCESSABLE_CONTENT, e.getMessage());

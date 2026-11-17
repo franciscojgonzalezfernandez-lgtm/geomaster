@@ -56,6 +56,7 @@ public class ProjectsController {
     @Operation(summary = "List the account's projects")
     @ApiResponse(responseCode = "200", description = "Projects")
     @ApiResponse(responseCode = "401", description = "Missing or invalid service token", content = @Content(mediaType = "application/problem+json", schema = @Schema(implementation = ProblemDetail.class)))
+    @ApiResponse(responseCode = "404", description = "Not a member of the token's account", content = @Content(mediaType = "application/problem+json", schema = @Schema(implementation = ProblemDetail.class)))
     @GetMapping
     public List<ProjectResponse> list() {
         return service.list().stream().map(ProjectResponse::of).toList();

@@ -12,6 +12,32 @@ security:
 - serviceToken: []
 paths:
   /v1/account:
+    delete:
+      operationId: delete
+      responses:
+        "204":
+          description: Account deleted
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+          description: Missing or invalid service token
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+          description: Caller is not an owner
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+          description: Not a member of the token's account
+      summary: Delete the current account and all of its data
+      tags:
+      - accounts-controller
     get:
       operationId: account
       responses:
@@ -54,6 +80,12 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
           description: Missing or invalid service token
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+          description: Not a member of the token's account
       summary: List the account's projects
       tags:
       - projects-controller

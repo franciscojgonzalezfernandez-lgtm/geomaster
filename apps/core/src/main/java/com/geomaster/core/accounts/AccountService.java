@@ -1,5 +1,6 @@
 package com.geomaster.core.accounts;
 
+import com.geomaster.core.api.ForbiddenException;
 import com.geomaster.core.api.InvalidInputException;
 import com.geomaster.core.api.NotFoundException;
 import com.geomaster.core.tenant.TenantContext;
@@ -60,5 +61,16 @@ public class AccountService {
     public Account currentAccount() {
         return accounts.findForMember(TenantContext.accountId(), TenantContext.userId())
                 .orElseThrow(() -> new NotFoundException("account"));
+    }
+
+    /** Delete the current account and all its data (REQ-18). Only an owner may do it. */
+    @Transactional
+    public void deleteCurrentAccount() {
+        Account account = accounts.lockForMember(TenantContext.accountId(), TenantContext.userId())
+                .orElseThrow(() -> new NotFoundException("account"));
+        if (!accounts.isOwner(account.id(), TenantContext.userId())) {
+            throw new ForbiddenException("only an account owner can delete the account");
+        }
+        accounts.delete(account.id());
     }
 }
