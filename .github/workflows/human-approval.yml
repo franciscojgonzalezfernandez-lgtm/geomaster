@@ -12,7 +12,7 @@ on:
     types: [labeled, synchronize]
 
 permissions:
-  contents: read
+  contents: write  # enabling auto-merge / merging needs it; this workflow never checks out PR code
   pull-requests: write
   statuses: write
 
@@ -50,5 +50,5 @@ jobs:
 
           gh api -X POST "repos/$REPO/statuses/$HEAD_SHA" \
             -f state=success -f context=review -f description="approved by ${SENDER} (${LABEL})" >/dev/null
-          gh pr merge "$PR" --repo "$REPO" --auto --squash || echo "auto-merge enable failed (not fatal)."
+          gh pr merge "$PR" --repo "$REPO" --auto --squash --match-head-commit "$HEAD_SHA"
           gh pr comment "$PR" --repo "$REPO" --body "✅ Human approval by ${SENDER} for \`${HEAD_SHA:0:7}\`: \`review\` set green, auto-merge enabled. A new push clears the approval. (ADR-0018)"

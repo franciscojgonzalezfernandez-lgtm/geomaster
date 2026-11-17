@@ -72,6 +72,8 @@ jobs:
 
   review:
     needs: guard
+    outputs:
+      automerge: ${{ steps.gate.outputs.automerge }}
     if: ${{ needs.guard.outputs.proceed == 'true' && needs.guard.outputs.has_key == 'true' }}
     runs-on: ubuntu-latest
     permissions:
@@ -220,7 +222,7 @@ jobs:
           if [ -z "$REASON" ]; then
             echo "Policy passed for PR #$PR (score=$SCORE, no blocking findings) → enabling auto-merge."
             post_status success "policy passed (score ${SCORE}, no blocking findings)"
-            gh pr merge "$PR" --auto --squash || echo "auto-merge enable failed (not fatal)."
+            echo "automerge=true" >> "$GITHUB_OUTPUT"  # merged by the `automerge` job (contents: write)
             gh pr comment "$PR" --body "🤖 Claude review: **policy passed** (score ${SCORE}, no blocking findings, no schema change). Auto-merge enabled. (ADR-0018)"
             exit 0
           else
@@ -229,3 +231,21 @@ jobs:
             gh pr comment "$PR" --body "🤖 Claude review: **held for a human** — ${REASON}. Review comments above. To approve, a repo admin adds the \`${APPROVAL_LABEL}\` label (no bypass needed). (score ${SCORE}, ADR-0018)"
             exit 1
           fi
+
+  # Merging needs `contents: write`. It lives in its own job so the job that runs the review agent
+  # never holds a write token for repository contents.
+  automerge:
+    needs: [guard, review]
+    if: ${{ needs.review.outputs.automerge == 'true' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ needs.guard.outputs.pr_number }}
+          REPO: ${{ github.repository }}
+          HEAD_SHA: ${{ needs.guard.outputs.head_sha }}
+        # --match-head-commit: never merge commits pushed after the reviewed head.
+        run: gh pr merge "$PR" --repo "$REPO" --auto --squash --match-head-commit "$HEAD_SHA"

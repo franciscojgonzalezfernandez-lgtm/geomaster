@@ -69,6 +69,11 @@ has no `paths` filter on `pull_request`: a filtered-out workflow never reports, 
 "Expected" forever and also never triggers this review (it is `workflow_run` on CI). Workflows
 that are not required checks (`CI core`, `CI web`) may keep path filters.
 
+**Merging runs in its own job.** Enabling auto-merge (or merging an already-green PR) needs
+`contents: write`; that permission is granted only to a separate `automerge` job that runs after a
+passing gate, pinned to the reviewed head SHA (`--match-head-commit`). The job that runs the review
+agent keeps `contents: read`.
+
 The gate holds unless: `quality_score ≥ min_quality_score`, `blocking_findings` is empty, the diff
 touches no `block_on_paths`, and no `block_on_labels` label is present. Criteria such as i18n,
 provider-layer and no-hard-coded-limits are enforced through the agent's blocking findings (and the
