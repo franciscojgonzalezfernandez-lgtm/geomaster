@@ -25,6 +25,7 @@ import java.util.UUID;
 
 import static org.hamcrest.Matchers.hasSize;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -217,6 +218,53 @@ class AccountsApiTest {
         mvc.perform(get("/v1/projects/" + id).header("Authorization", other.token())).andExpect(status().isNotFound());
         mvc.perform(get("/v1/projects").header("Authorization", other.token()))
                 .andExpect(status().isOk()).andExpect(jsonPath("$", hasSize(0)));
+    }
+
+    @Test
+    void projectReadsRequireMembershipOfTheTokensAccount() throws Exception {
+        Session owner = signIn();
+        Session intruder = signIn();
+        createProject(owner, "{\"domain\":\"members-only.ch\",\"languages\":[\"de\"],\"country\":\"CH\"}")
+                .andExpect(status().isCreated());
+        mvc.perform(get("/v1/projects").header("Authorization", intruder.token(owner.accountId(), "free")))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void ownerDeletesAccountAndEveryTenantRowGoes() throws Exception {
+        Session s = signIn();
+        String id = createProject(s, "{\"domain\":\"delete-me.ch\",\"languages\":[\"de\"],\"country\":\"CH\"}")
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString().replaceAll(".*\"id\":\"([0-9a-f-]+)\".*", "$1");
+
+        mvc.perform(delete("/v1/account").header("Authorization", s.token())).andExpect(status().isNoContent());
+
+        // Every table with an account_id column (now and in future migrations) must be empty for it.
+        List<String> tables = db.sql("""
+                SELECT table_name FROM information_schema.columns
+                WHERE table_schema = 'public' AND column_name = 'account_id'
+                """).query(String.class).list();
+        for (String table : tables) {
+            int left = db.sql("SELECT count(*) FROM " + table + " WHERE account_id = :a")
+                    .param("a", s.accountId()).query(Integer.class).single();
+            assertEquals(0, left, table + " still holds rows for the deleted account (REQ-18)");
+        }
+        int languages = db.sql("SELECT count(*) FROM project_language WHERE project_id = :p")
+                .param("p", UUID.fromString(id)).query(Integer.class).single();
+        assertEquals(0, languages);
+        mvc.perform(get("/v1/account").header("Authorization", s.token())).andExpect(status().isNotFound());
+    }
+
+    @Test
+    void onlyAnOwnerCanDeleteTheAccount() throws Exception {
+        Session owner = signIn();
+        UUID member = newUser();
+        db.sql("INSERT INTO account_member (account_id, user_id, role) VALUES (:a, :u, 'member')")
+                .param("a", owner.accountId()).param("u", member).update();
+        Session asMember = new Session(member, owner.accountId(), "free");
+
+        mvc.perform(delete("/v1/account").header("Authorization", asMember.token())).andExpect(status().isForbidden());
+        mvc.perform(get("/v1/account").header("Authorization", owner.token())).andExpect(status().isOk());
     }
 
     private static String json(List<String> values) {

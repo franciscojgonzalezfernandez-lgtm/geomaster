@@ -61,6 +61,7 @@ public class ProjectService {
     }
 
     public List<ProjectView> list() {
+        requireMembership();
         List<ProjectView> out = new ArrayList<>();
         for (Project p : projects.listForCurrentAccount()) {
             out.add(view(p));
@@ -69,7 +70,14 @@ public class ProjectService {
     }
 
     public ProjectView get(UUID id) {
+        requireMembership();
         return projects.findById(id).map(this::view).orElseThrow(() -> new NotFoundException("project"));
+    }
+
+    /** Defence in depth: the user must belong to the account named in the token (as on create). */
+    private void requireMembership() {
+        accounts.findForMember(TenantContext.accountId(), TenantContext.userId())
+                .orElseThrow(() -> new NotFoundException("account"));
     }
 
     private ProjectView view(Project p) {

@@ -80,6 +80,25 @@ public class AccountRepository {
                 .optional();
     }
 
+    public boolean isOwner(UUID accountId, UUID userId) {
+        return db.sql("""
+                SELECT EXISTS (SELECT 1 FROM account_member
+                               WHERE account_id = :accountId AND user_id = :userId AND role = 'owner')
+                """)
+                .param("accountId", accountId)
+                .param("userId", userId)
+                .query(Boolean.class)
+                .single();
+    }
+
+    /**
+     * Delete the account; every tenant-owned table references {@code account(id)} with
+     * {@code ON DELETE CASCADE}, so all of its data goes with it (REQ-18).
+     */
+    public void delete(UUID accountId) {
+        db.sql("DELETE FROM account WHERE id = :id").param("id", accountId).update();
+    }
+
     public Optional<Account> findById(UUID id) {
         return db.sql("SELECT id, name, plan_id, created_at FROM account WHERE id = :id")
                 .param("id", id)
