@@ -70,15 +70,16 @@ jobs:
           fi
           echo "proceed=true" >> "$GITHUB_OUTPUT"
 
+  # Runs the review agent. It only READS the repo and writes a verdict artifact; it holds no
+  # statuses/contents write token and decides nothing. The PR-head checkout is untrusted.
   review:
     needs: guard
     if: ${{ needs.guard.outputs.proceed == 'true' && needs.guard.outputs.has_key == 'true' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      pull-requests: write
-      statuses: write  # post the `review` commit status onto the PR head (required check)
-      id-token: write  # anthropics/claude-code-action mints its GitHub App token via OIDC
+      pull-requests: write  # the agent posts its review comment
+      id-token: write       # anthropics/claude-code-action mints its GitHub App token via OIDC
     steps:
       - uses: actions/checkout@v4
         with:
@@ -86,7 +87,7 @@ jobs:
           fetch-depth: 0
 
       - id: diff
-        name: Compute diff and schema fence (deterministic, not trusted to the agent)
+        name: Compute the diff for the agent
         env:
           GH_TOKEN: ${{ github.token }}
           PR: ${{ needs.guard.outputs.pr_number }}
@@ -95,17 +96,7 @@ jobs:
           set -euo pipefail
           BASE=$(gh api "repos/$REPO/pulls/$PR" --jq '.base.sha')
           git fetch --no-tags origin "$BASE"
-          CHANGED=$(git diff --name-only "$BASE"...HEAD)
-          echo "$CHANGED" > changed-files.txt
-          # Protected paths from config (schema + migrations). Fence computed here, in CI.
-          TOUCHES_SCHEMA=false
-          while IFS= read -r pat; do
-            [ -z "$pat" ] && continue
-            if echo "$CHANGED" | grep -qiE "$(printf '%s' "$pat" | sed 's#\*\*#.*#g; s#/#\\/#g')"; then
-              TOUCHES_SCHEMA=true
-            fi
-          done < <(yq -r '.auto_approve.block_on_paths[]' .github/claude/config.yml)
-          echo "touches_schema=$TOUCHES_SCHEMA" >> "$GITHUB_OUTPUT"
+          git diff --name-only "$BASE"...HEAD > changed-files.txt
           echo "base_sha=$BASE" >> "$GITHUB_OUTPUT"
 
       - name: Claude review (clean context) → verdict JSON
@@ -152,71 +143,131 @@ jobs:
           path: claude-verdict.json
           if-no-files-found: warn
 
+  # Deterministic policy gate (ADR-0018), on a FRESH runner the agent never touched. Policy
+  # (.github/claude/config.yml) comes from the default branch, never from the PR, so a PR cannot
+  # relax the rules that judge it. Posts the required `review` commit status on the PR head
+  # (workflow_run check-runs land on main, not the PR head):
+  #   enabled + policy passes → status success → `automerge` job
+  #   enabled + held/schema  → status failure (a repo admin approves via the human-approval label)
+  #   head already approved by human-approval.yml → left as is (never overwritten)
+  #   disabled (kill-switch) → status success, no auto-merge (human merges manually)
+  gate:
+    needs: [guard, review]
+    if: ${{ always() && needs.guard.outputs.proceed == 'true' && needs.guard.outputs.has_key == 'true' }}
+    runs-on: ubuntu-latest
+    outputs:
+      automerge: ${{ steps.gate.outputs.automerge }}
+      score: ${{ steps.gate.outputs.score }}
+    permissions:
+      contents: read
+      pull-requests: write  # comment the outcome
+      statuses: write       # post the `review` commit status
+    steps:
+      - uses: actions/checkout@v4  # workflow_run → default branch: the trusted policy
+        with:
+          sparse-checkout: .github/claude
+      - uses: actions/download-artifact@v4
+        continue-on-error: true  # no verdict → treated as score 0 with a blocking finding
+        with:
+          name: claude-verdict
+          path: verdict
       - id: gate
-        name: Policy gate (deterministic) → posts the required `review` commit status on the PR head
-        # Design B (ADR-0018): no GitHub approval. main requires 0 approvals and the `review`
-        # status check. Because this workflow is workflow_run-triggered, its own check-run lands on
-        # main, not the PR head — so the gate explicitly POSTS a `review` commit status onto the PR
-        # head SHA, which is what branch protection matches:
-        #   enabled + policy passes → status success + auto-merge
-        #   enabled + held/schema  → status failure (PR blocked; admin override only)
-        #   disabled (kill-switch) → status success, no auto-merge (human merges manually)
         env:
           GH_TOKEN: ${{ github.token }}
           PR: ${{ needs.guard.outputs.pr_number }}
           REPO: ${{ github.repository }}
           HEAD_SHA: ${{ needs.guard.outputs.head_sha }}
-          TOUCHES_SCHEMA: ${{ steps.diff.outputs.touches_schema }}
         run: |
           set -euo pipefail
-          cfg() { yq -r "$1" .github/claude/config.yml; }
-          # Post the `review` commit status onto the PR head (the branch-protection required check).
+          POLICY=.github/claude/config.yml
+          cfg() { yq -r "$1" "$POLICY"; }
           post_status() { # <state> <description>
             gh api -X POST "repos/$REPO/statuses/$HEAD_SHA" \
               -f state="$1" -f context="review" -f description="$2" >/dev/null
           }
           ENABLED=$(cfg '.auto_approve.enabled')
           MIN=$(cfg '.auto_approve.min_quality_score')
+          APPROVAL_LABEL=$(cfg '.auto_approve.human_approval_label // "human-approved"')
 
-          if [ ! -f claude-verdict.json ]; then
+          V=verdict/claude-verdict.json
+          if [ ! -f "$V" ]; then
             echo "No verdict file — treating as score 0 with a blocking finding."
             SCORE=0; BLOCKING=1
           else
-            SCORE=$(jq -r '(.quality_score // 0) | floor' claude-verdict.json)
-            BLOCKING=$(jq -r '(.blocking_findings // []) | length' claude-verdict.json)
+            SCORE=$(jq -r '(.quality_score // 0) | floor' "$V")
+            BLOCKING=$(jq -r '(.blocking_findings // []) | length' "$V")
           fi
+          echo "score=$SCORE" >> "$GITHUB_OUTPUT"
           echo "score=$SCORE blocking_findings=$BLOCKING"
+
+          # Never overwrite a human approval of this exact head (posted by human-approval.yml after
+          # it verified the labeller is an admin).
+          LATEST=$(gh api "repos/$REPO/commits/$HEAD_SHA/statuses" \
+            --jq '[.[] | select(.context=="review")][0] | "\(.state)|\(.description)"' 2>/dev/null || true)
+          if [[ "$LATEST" == success\|approved\ by\ * ]]; then
+            echo "Head already approved by a human ($LATEST) — leaving the status as is."
+            exit 0
+          fi
+
+          # Protected paths (schema + migrations), matched as globs against the PR's files (API).
+          FILES=$(gh api --paginate "repos/$REPO/pulls/$PR/files" --jq '.[].filename')
+          TOUCHES_SCHEMA=false
+          while IFS= read -r pat; do
+            [ -z "$pat" ] && continue
+            while IFS= read -r f; do
+              # shellcheck disable=SC2053
+              if [[ "$f" == $pat || "$f" == ${pat#\*\*/} ]]; then TOUCHES_SCHEMA=true; fi
+            done <<< "$FILES"
+          done < <(cfg '.auto_approve.block_on_paths[]')
 
           # Per-PR opt-out labels.
           LABELS=$(gh api "repos/$REPO/issues/$PR/labels" --jq '.[].name' 2>/dev/null || true)
           LABEL_BLOCK=false
           while IFS= read -r l; do
             [ -n "$l" ] && echo "$LABELS" | grep -qx "$l" && LABEL_BLOCK=true
-          done < <(yq -r '.auto_approve.block_on_labels[]' .github/claude/config.yml)
+          done < <(cfg '.auto_approve.block_on_labels[]')
 
           # Kill-switch: advisory only, never blocks or auto-merges. Humans merge manually.
           if [ "$ENABLED" != "true" ]; then
             post_status success "advisory (auto-approval disabled); score ${SCORE}"
             gh pr comment "$PR" --body "🤖 Claude review (advisory — auto-approval disabled in config). score ${SCORE}. See review above; merge is manual. (ADR-0018)"
-            echo "auto-approval disabled → advisory, non-blocking."
             exit 0
           fi
 
           REASON=""
-          [ "$TOUCHES_SCHEMA" = "true" ] && REASON="diff touches DB schema/migration — human required"
+          [ "$TOUCHES_SCHEMA" = "true" ] && REASON="diff touches a protected path (schema/migration) — human required"
           [ "$LABEL_BLOCK" = "true" ] && REASON="opt-out label present"
           [ "$SCORE" -ge "$MIN" ] 2>/dev/null || REASON="quality score $SCORE < $MIN"
           [ "$BLOCKING" = "0" ] || REASON="$BLOCKING blocking finding(s)"
 
           if [ -z "$REASON" ]; then
-            echo "Policy passed for PR #$PR (score=$SCORE, no blocking findings) → enabling auto-merge."
+            echo "Policy passed for PR #$PR (score=$SCORE, no blocking findings)."
             post_status success "policy passed (score ${SCORE}, no blocking findings)"
-            gh pr merge "$PR" --auto --squash || echo "auto-merge enable failed (not fatal)."
-            gh pr comment "$PR" --body "🤖 Claude review: **policy passed** (score ${SCORE}, no blocking findings, no schema change). Auto-merge enabled. (ADR-0018)"
-            exit 0
+            echo "automerge=true" >> "$GITHUB_OUTPUT"
           else
             echo "Holding PR #$PR for a human: $REASON"
             post_status failure "held: ${REASON} (score ${SCORE})"
-            gh pr comment "$PR" --body "🤖 Claude review: **held for a human** — ${REASON}. Review comments above; admin merge required. (score ${SCORE}, ADR-0018)"
+            gh pr comment "$PR" --body "🤖 Claude review: **held for a human** — ${REASON}. Review comments above. To approve this head, a repo admin adds the \`${APPROVAL_LABEL}\` label (no bypass needed). (score ${SCORE}, ADR-0018)"
             exit 1
           fi
+
+  # Merging needs `contents: write`; only this job has it, and only after a passing gate.
+  automerge:
+    needs: [guard, gate]
+    if: ${{ needs.gate.outputs.automerge == 'true' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ needs.guard.outputs.pr_number }}
+          REPO: ${{ github.repository }}
+          HEAD_SHA: ${{ needs.guard.outputs.head_sha }}
+          SCORE: ${{ needs.gate.outputs.score }}
+        run: |
+          set -euo pipefail
+          # --match-head-commit: never merge commits pushed after the reviewed head.
+          gh pr merge "$PR" --repo "$REPO" --auto --squash --match-head-commit "$HEAD_SHA"
+          gh pr comment "$PR" --repo "$REPO" --body "🤖 Claude review: **policy passed** (score ${SCORE}, no blocking findings, no protected path). Auto-merge enabled for \`${HEAD_SHA:0:7}\`. (ADR-0018)"

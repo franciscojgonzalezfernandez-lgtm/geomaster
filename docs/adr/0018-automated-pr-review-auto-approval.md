@@ -51,11 +51,36 @@ head SHA** — that status is what branch protection matches. The gate encodes t
 - policy holds → enable auto-merge and exit success → `review` **green** → PR merges once all
   required checks (ADR-0013) are green;
 - held or schema/migration diff → comment the reason and exit failure → `review` **red** → PR
-  blocked; only an admin override merges it;
+  blocked until a human approves it (below);
 - kill-switch off (`enabled: false`) → advisory comment, no auto-merge, exit success → `review`
   green and non-blocking, so a human merges manually.
 
 It never blocks silently: every outcome posts a comment with the reason.
+
+**Human approval without bypass.** A held PR is approved by a repo admin adding the
+`human_approval_label` (`human-approved`). `human-approval.yml` (`pull_request_target`, runs from
+the default branch, never checks out PR code) verifies the sender is an admin, posts a green
+`review` status on the current head SHA and enables auto-merge. Any new push removes the label, so
+approval is per commit (the status is bound to the SHA anyway). The gate never overwrites a
+`review` status that human-approval.yml posted on the same head, and it never reads the label
+itself, so only an admin-verified labelling can approve. Branch
+protection bypass is therefore reserved for emergencies, never the normal path.
+
+**Required checks must always report.** `web-smoke` and `core-smoke` are required, so `CI smoke`
+has no `paths` filter on `pull_request`: a filtered-out workflow never reports, leaves the checks
+"Expected" forever and also never triggers this review (it is `workflow_run` on CI). Workflows
+that are not required checks (`CI core`, `CI web`) may keep path filters.
+
+**Trust boundaries.** The agent job checks out untrusted PR code and holds no `statuses` or
+`contents: write` token. The gate runs in a separate job on a fresh runner, reads the verdict only
+from the uploaded artifact and reads the policy (`config.yml`) from the default branch, so a PR
+cannot relax the rules that judge it; protected paths are matched as globs against the PR's file
+list from the API.
+
+**Merging runs in its own job.** Enabling auto-merge (or merging an already-green PR) needs
+`contents: write`; that permission is granted only to a separate `automerge` job that runs after a
+passing gate, pinned to the reviewed head SHA (`--match-head-commit`). The job that runs the review
+agent keeps `contents: read`.
 
 The gate holds unless: `quality_score ≥ min_quality_score`, `blocking_findings` is empty, the diff
 touches no `block_on_paths`, and no `block_on_labels` label is present. Criteria such as i18n,
@@ -63,7 +88,7 @@ provider-layer and no-hard-coded-limits are enforced through the agent's blockin
 required CI/Lighthouse/smoke checks), not a separate boolean list.
 
 **Configuration** lives in `.github/claude/config.yml` (policy as code): `enabled`,
-`min_quality_score`, `block_on_paths[]`, `block_on_labels[]`. It is changed
+`min_quality_score`, `block_on_paths[]`, `block_on_labels[]`, `human_approval_label`. It is changed
 by editing that file (e.g. in conversation with the coding agent) — turning auto-approval off is a
 one-line, reversible PR, and `block_on_labels` (`no-auto-approve`) is a per-PR override.
 

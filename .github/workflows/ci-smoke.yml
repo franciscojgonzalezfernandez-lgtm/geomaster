@@ -3,9 +3,11 @@ name: CI smoke
 # Smoke gate (ADR-0013): boot the real artifacts and assert the system comes up.
 # A green build with a dead runtime does not pass.
 
+# No `paths` filter on pull_request, on purpose: web-smoke and core-smoke are REQUIRED checks on
+# main, and a path-filtered workflow that never starts leaves them "Expected" forever, which
+# blocks the PR (and the Claude review, which is triggered by this workflow's completion).
 on:
   pull_request:
-    paths: ["apps/**", "packages/**", "gradle/**", "gradlew", "settings.gradle.kts", "package.json", "pnpm-lock.yaml", "turbo.json", ".github/workflows/ci-smoke.yml"]
   push:
     branches: [main]
 

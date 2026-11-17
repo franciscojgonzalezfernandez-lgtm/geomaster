@@ -1,0 +1,57 @@
+name: Human approval
+
+# Lets the owner approve a PR the Claude review gate held (ADR-0018) WITHOUT bypassing branch
+# protection: adding the approval label posts a green `review` commit status on the PR head.
+# Approval is per commit: any new push removes the label, and the gate re-reviews the new head.
+#
+# pull_request_target runs this file from the default branch and never checks out PR code,
+# so a PR cannot change who may approve it.
+
+on:
+  pull_request_target:
+    types: [labeled, synchronize]
+
+permissions:
+  contents: write  # enabling auto-merge / merging needs it; this workflow never checks out PR code
+  pull-requests: write
+  statuses: write
+
+jobs:
+  approve:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4  # default branch only (config), never the PR head
+      - env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          ACTION: ${{ github.event.action }}
+          ADDED_LABEL: ${{ github.event.label.name }}
+          SENDER: ${{ github.event.sender.login }}
+        run: |
+          set -euo pipefail
+          LABEL=$(yq -r '.auto_approve.human_approval_label // "human-approved"' .github/claude/config.yml)
+
+          if [ "$ACTION" = "synchronize" ]; then
+            # New commits invalidate a previous human approval.
+            if echo "$(gh pr view "$PR" --repo "$REPO" --json labels --jq '.labels[].name')" | grep -qx "$LABEL"; then
+              gh pr edit "$PR" --repo "$REPO" --remove-label "$LABEL" >/dev/null \
+                || echo "::warning::could not remove '$LABEL' after a push (approval is per-SHA anyway)"
+            fi
+            exit 0
+          fi
+
+          [ "$ADDED_LABEL" = "$LABEL" ] || { echo "Label '$ADDED_LABEL' is not the approval label — skip."; exit 0; }
+
+          PERM=$(gh api "repos/$REPO/collaborators/$SENDER/permission" --jq '.permission')
+          if [ "$PERM" != "admin" ]; then
+            gh pr edit "$PR" --repo "$REPO" --remove-label "$LABEL" >/dev/null || true
+            gh pr comment "$PR" --repo "$REPO" --body "🔒 \`$LABEL\` can only be applied by a repo admin (@$SENDER has \`$PERM\`). Label removed."
+            exit 1
+          fi
+
+          gh api -X POST "repos/$REPO/statuses/$HEAD_SHA" \
+            -f state=success -f context=review -f description="approved by ${SENDER} (${LABEL})" >/dev/null
+          gh pr merge "$PR" --repo "$REPO" --auto --squash --match-head-commit "$HEAD_SHA"
+          gh pr comment "$PR" --repo "$REPO" --body "✅ Human approval by ${SENDER} for \`${HEAD_SHA:0:7}\`: \`review\` set green, auto-merge enabled. A new push clears the approval. (ADR-0018)"
