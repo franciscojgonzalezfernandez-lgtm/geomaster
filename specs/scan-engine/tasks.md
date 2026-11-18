@@ -6,7 +6,7 @@ recorded fixtures).
 - [x] T1 — Flyway `V3__scan_engine.sql`: `prompt`, `prompt_version`, `scan`, `scan_unit`, `llm_call`,
       `llm_call_citation`; idempotency unique key, one-active-scan partial index. (REQ-1, REQ-2, REQ-12)
 - [ ] T2 — Prompts API: add/edit/delete/list within the plan's `prompts` limit; versions kept. (REQ-1, REQ-2)
-- [ ] T3 — `ProviderAdapter` interface, `ProviderConfig` (model, prices, limits from config), `CostCalculator`,
+- [x] T3 — `ProviderAdapter` interface, `ProviderConfig` (model, prices, limits from config), `CostCalculator`,
       `FakeAdapter`. (REQ-7, REQ-11, REQ-14; ADR-0007)
 - [ ] T4 — Queue + workers: SKIP LOCKED claim, leases, backoff, per-provider semaphores, circuit breaker.
       (REQ-9, REQ-10, REQ-11; ADR-0004)
