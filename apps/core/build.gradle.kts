@@ -26,6 +26,11 @@ dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-webmvc")
 	// JWT/JWKS parsing for the web→core service token (ADR-0017); Ed25519 is verified with the JDK.
 	implementation("com.nimbusds:nimbus-jose-jwt:10.10")
+	implementation("com.openai:openai-java:4.101.0") {
+		// The SDK ships non-Jakarta swagger-annotations 2.2.31; the same classes come from springdoc's
+		// swagger-annotations-jakarta 2.2.55, and the older copy breaks /v3/api-docs (NoSuchMethodError).
+		exclude(group = "io.swagger.core.v3", module = "swagger-annotations")
+	}
 	implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:3.1.1")
 	implementation("org.flywaydb:flyway-database-postgresql")
 	runtimeOnly("org.postgresql:postgresql")
