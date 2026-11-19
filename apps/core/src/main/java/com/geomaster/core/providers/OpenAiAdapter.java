@@ -106,8 +106,10 @@ public final class OpenAiAdapter implements ProviderAdapter {
                         }
                         text.append(out.text());
                         for (ResponseOutputText.Annotation a : out.annotations()) {
-                            a.urlCitation().ifPresent(c ->
-                                    citations.putIfAbsent(c.url(), new ProviderAnswer.Citation(c.url(), c.title())));
+                            a.urlCitation().ifPresent(c -> {
+                                String url = stripOpenAiTracking(c.url());
+                                citations.putIfAbsent(url, new ProviderAnswer.Citation(url, c.title()));
+                            });
                         }
                     });
                 }
@@ -149,5 +151,20 @@ public final class OpenAiAdapter implements ProviderAdapter {
                 response.model().asString(),
                 null,
                 latency);
+    }
+
+    /** OpenAI appends {@code utm_source=openai} to cited links; drop it so URLs match the source page. */
+    static String stripOpenAiTracking(String url) {
+        int q = url.indexOf('?');
+        if (q < 0) {
+            return url;
+        }
+        int hash = url.indexOf('#', q);
+        String query = hash < 0 ? url.substring(q + 1) : url.substring(q + 1, hash);
+        String fragment = hash < 0 ? "" : url.substring(hash);
+        String kept = java.util.Arrays.stream(query.split("&"))
+                .filter(p -> !p.equals("utm_source=openai"))
+                .collect(java.util.stream.Collectors.joining("&"));
+        return url.substring(0, q) + (kept.isEmpty() ? "" : "?" + kept) + fragment;
     }
 }

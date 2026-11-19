@@ -42,7 +42,7 @@
           "logprobs": [],
           "annotations": [
             {"type": "url_citation", "start_index": 49, "end_index": 99, "title": "Ride Flumserberg", "url": "https://www.rideflumserberg.ch/"},
-            {"type": "url_citation", "start_index": 140, "end_index": 196, "title": "Skischule Flumserberg", "url": "https://www.skischule-flumserberg.ch/"},
+            {"type": "url_citation", "start_index": 140, "end_index": 196, "title": "Skischule Flumserberg", "url": "https://www.skischule-flumserberg.ch/?utm_source=openai"},
             {"type": "url_citation", "start_index": 0, "end_index": 10, "title": "Ride Flumserberg (dup)", "url": "https://www.rideflumserberg.ch/"}
           ]
         }

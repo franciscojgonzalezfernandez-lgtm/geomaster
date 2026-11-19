@@ -84,6 +84,15 @@ class OpenAiAdapterTest {
     }
 
     @Test
+    void stripsOnlyOpenAiTrackingParameter() {
+        assertThat(OpenAiAdapter.stripOpenAiTracking("https://a.ch/x?utm_source=openai")).isEqualTo("https://a.ch/x");
+        assertThat(OpenAiAdapter.stripOpenAiTracking("https://a.ch/x?lang=de&utm_source=openai#top"))
+                .isEqualTo("https://a.ch/x?lang=de#top");
+        assertThat(OpenAiAdapter.stripOpenAiTracking("https://a.ch/x?utm_source=news")).isEqualTo("https://a.ch/x?utm_source=news");
+        assertThat(OpenAiAdapter.stripOpenAiTracking("https://a.ch/")).isEqualTo("https://a.ch/");
+    }
+
+    @Test
     void requestWithoutCountryHasNoLocation() {
         ResponseCreateParams p = OpenAiAdapter.params("chat-latest", new AnswerRequest("q", "en", null, null, 1));
         String body = ObjectMappers.jsonMapper().valueToTree(p._body()).toString();

@@ -13,7 +13,6 @@ recorded fixtures).
 - [ ] T5 — `ScanPlanner` + `ScanFinalizer` + `ResponseCache` + `BudgetGuard` interface. (REQ-3..REQ-6, REQ-8, REQ-15, REQ-18)
 - [ ] T6 — Scans API: start, list, detail with progress; contract regenerated. (REQ-16, REQ-17)
 - [x] T7 — 🔑 `OpenAiAdapter` (Responses API + `web_search`, user location, max searches). (REQ-7, REQ-12)
-      Live smoke pending: run `OpenAiSmokeTest` once the OpenAI account has credits.
 - [ ] T8 — 🔑 `GeminiAdapter` (Google Search grounding, search entry point stored). (REQ-7, REQ-12, REQ-13)
 - [ ] T9 — 🔑 `ClaudeAdapter` (web search tool, `max_uses`, user location). (REQ-7, REQ-12)
 - [ ] T10 — Weekly scheduler with advisory lock. (REQ-5)
