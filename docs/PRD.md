@@ -291,7 +291,7 @@ GEOMASTER cobra por prompts × motores × idiomas × frecuencia, con cuatro plan
 
 ## Modelo económico
 
-Con una pérdida máxima de CHF 400/mes, los costes fijos se limitan a unos CHF 130 y el embudo gratuito a lo que quede de presupuesto; el break-even operativo llega con 5 clientes de pago. El sueldo del autor no entra en este cálculo.
+Con una pérdida máxima de CHF 400/mes, los costes fijos se limitan a unos CHF 100 y el embudo gratuito a lo que quede de presupuesto; el break-even operativo llega con 5 clientes de pago. El sueldo del autor no entra en este cálculo.
 
 **Coste unitario.** Una respuesta se presupuesta en CHF 0,05: unas 2 búsquedas web (OpenAI $10 por 1.000 llamadas, Claude $10 por 1.000 búsquedas, Gemini 3 $14 por 1.000 consultas tras 5.000 gratis al mes), unos 8k tokens de entrada y 1k de salida en el modelo de consumo, y la extracción con un modelo barato como Claude Haiku 5.5 ($0,10 / $0,50 por millón de tokens). Cada escaneo suma CHF 0,25 por generar recomendaciones y cada artefacto CHF 0,10. Stripe: \~3 % + CHF 0,30.
 
@@ -307,14 +307,13 @@ Con una pérdida máxima de CHF 400/mes, los costes fijos se limitan a unos CHF 
 | Partida | Beta (dic 2026–feb 2027) | Tras el lanzamiento |
 | --- | --- | --- |
 | Infraestructura (hosting, base de datos, colas, email, monitorización, dominio) | 100 | 100 |
-| Agentes de revisión de PR (API) | 30 | 30 |
 | Dogfooding rideflumserberg.ch (40 prompts × 3 motores × 4 idiomas) | 30 | 30 |
 | 8 usuarios beta invitados (nivel Starter) | 190 | — |
 | Herramienta gratis (\~1.000 comprobaciones × CHF 0,07) | — | 70 |
 | Escaneos Free (máx. 90 × CHF 1,75) | — | 158 |
-| **Total** | **350** | **388** |
+| **Total** | **320** | **358** |
 
-**Break-even:** con una mezcla 60 % Starter, 30 % Pro y 10 % Premium, el margen medio es de CHF 77,5 por cliente; 388 ÷ 77,5 = 5 clientes de pago. Si el 5 % de los Free convierte, captar un cliente cuesta unos CHF 35 en escaneos gratis y se recupera en menos de un mes.
+**Break-even:** con una mezcla 60 % Starter, 30 % Pro y 10 % Premium, el margen medio es de CHF 77,5 por cliente; 358 ÷ 77,5 ≈ 4,6, es decir 5 clientes de pago. Si el 5 % de los Free convierte, captar un cliente cuesta unos CHF 35 en escaneos gratis y se recupera en menos de un mes.
 
 **Regla del guardián de presupuesto:** gasto del embudo gratuito ≤ CHF 400 + margen de los clientes de pago − costes fijos. Así el embudo crece con los ingresos y la pérdida nunca supera CHF 400.
 
@@ -332,13 +331,13 @@ La fiabilidad del escaneo y el control de costes son los dos atributos que más 
 | NFR-02 | Fiabilidad | ≥ 99 % de escaneos completos; reintentos idempotentes; un proveedor caído no bloquea los otros dos |
 | NFR-03 | Disponibilidad | 99,5 % mensual de la aplicación web |
 | NFR-04 | Coste | Coste real registrado por respuesta; límites duros por plan; guardián de presupuesto activo |
-| NFR-05 | Seguridad | Claves de API solo en servidor; aislamiento entre cuentas; OWASP Top 10; dependencias revisadas por agentes en cada PR |
+| NFR-05 | Seguridad | Claves de API solo en servidor; aislamiento entre cuentas; OWASP Top 10; dependencias con versiones fijadas |
 | NFR-06 | Privacidad | Datos alojados en CH o UE; exportación y borrado de cuenta en autoservicio |
 | NFR-07 | Accesibilidad | WCAG 2.1 AA |
 | NFR-08 | i18n | Interfaz, emails, landings y blog en EN, DE, FR, ES; URLs localizadas con `hreflang`; formatos de fecha, número y moneda por locale |
 | NFR-09 | SEO/GEO propio | Lighthouse ≥ 90 en Rendimiento, Accesibilidad, Prácticas recomendadas y SEO en todas las páginas públicas, en móvil y escritorio, verificado en CI; páginas renderizadas en servidor, datos estructurados, `llms.txt`, sitemap por idioma |
 | NFR-10 | Observabilidad | Trazas por escaneo y por llamada a LLM; alertas por tasa de error y por desviación de coste |
-| NFR-11 | Calidad del código | Spec Driven Development; revisión de PR por agentes (resumen, vulnerabilidades, calidad); tests y evals en CI |
+| NFR-11 | Calidad del código | Spec Driven Development; tests y evals en CI; un PR se fusiona solo cuando pasan todos los checks obligatorios (ADR-0019) |
 | NFR-12 | Portabilidad de modelos | Capa de proveedores intercambiable: cambiar de modelo es configuración, no código |
 | NFR-13 | Reproducibilidad | Cada métrica es trazable hasta las respuestas literales y las versiones de modelo, prompt y fórmula |
 
@@ -359,7 +358,7 @@ El extractor convierte texto libre en datos; el índice RAG, alimentado por el c
 | Generador de artefactos | Generación aumentada con recuperación | Claude Sonnet 5.5 |
 | Índice RAG | Embeddings + búsqueda vectorial por proyecto e idioma | A decidir en arquitectura |
 
-**Desarrollo agéntico del propio producto:** Spec Driven Development (PRD → specs → tareas), implementación con Claude Code, y agentes en GitHub Actions que resumen cada PR, buscan vulnerabilidades y puntúan su calidad; los cambios rutinarios con calidad superior al 90 % pueden aprobarse solos. Las evals del extractor corren en CI como cualquier test.
+**Desarrollo agéntico del propio producto:** Spec Driven Development (PRD → specs → tareas), implementación con Claude Code y fusión automática de cada PR cuando pasan los tests de CI (ADR-0019). Las evals del extractor corren en CI como cualquier test.
 
 ## Legal y cumplimiento
 
@@ -410,7 +409,7 @@ El riesgo más probable es que el coste real por respuesta supere CHF 0,05; el d
 | Coste por respuesta > CHF 0,05 (más búsquedas o tokens de lo previsto) | Alta | Alto | Medir en la beta; límites de búsquedas por llamada; Batch API; ajustar prompts por plan antes del lanzamiento |
 | Las respuestas de la API difieren de las apps de consumo | Media | Alto | Transparencia en el producto; muestreo manual periódico de las apps para comparar |
 | Cambios de precio o de modelos de los proveedores | Alta | Medio | Capa de proveedores intercambiable; precios revisables con 30 días de aviso |
-| Calendario: 10 h/semana no bastan para la beta del 14 de diciembre | Media | Medio | Alcance de beta reducido al bucle principal; desarrollo agéntico con revisión automática de PR |
+| Calendario: 10 h/semana no bastan para la beta del 14 de diciembre | Media | Medio | Alcance de beta reducido al bucle principal; desarrollo agéntico con fusión automática tras tests verdes |
 | Falsos positivos o negativos en la detección de menciones | Media | Alto | Suite de evals con umbrales en CI; resolución de entidades |
 | Abuso de la herramienta gratis | Media | Medio | Turnstile, límites por IP y dominio, guardián de presupuesto |
 | Competidores con más recursos entran en DACH | Media | Medio | Foco local y multilingüe, consultoría personal, precio en CHF |
@@ -425,7 +424,7 @@ Los números de este PRD descansan en cinco supuestos que la beta debe confirmar
 - Coste medio de CHF 0,05 por respuesta, con unas 2 búsquedas y 9k tokens.
 - Mezcla de clientes 60 % Starter, 30 % Pro, 10 % Premium.
 - Conversión Free → pago del 5 % en 90 días.
-- Costes fijos de unos CHF 130/mes.
+- Costes fijos de unos CHF 100/mes.
 - Disponibilidad del autor: 10 h/semana, apoyado en desarrollo agéntico.
 
 **Preguntas abiertas:**
