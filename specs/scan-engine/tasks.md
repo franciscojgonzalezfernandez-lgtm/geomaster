@@ -8,7 +8,7 @@ recorded fixtures).
 - [x] T2 — Prompts API: add/edit/delete/list within the plan's `prompts` limit; versions kept. (REQ-1, REQ-2)
 - [x] T3 — `ProviderAdapter` interface, `ProviderConfig` (model, prices, limits from config), `CostCalculator`,
       `FakeAdapter`. (REQ-7, REQ-11, REQ-14; ADR-0007)
-- [ ] T4 — Queue + workers: SKIP LOCKED claim, leases, backoff, per-provider semaphores, circuit breaker.
+- [x] T4 — Queue + workers: SKIP LOCKED claim, leases, backoff, per-provider semaphores, circuit breaker.
       (REQ-9, REQ-10, REQ-11; ADR-0004)
 - [ ] T5 — `ScanPlanner` + `ScanFinalizer` + `ResponseCache` + `BudgetGuard` interface. (REQ-3..REQ-6, REQ-8, REQ-15, REQ-18)
 - [ ] T6 — Scans API: start, list, detail with progress; contract regenerated. (REQ-16, REQ-17)
