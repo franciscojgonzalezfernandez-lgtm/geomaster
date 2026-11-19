@@ -28,6 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /** The scan_unit queue end to end with fake engines (scan-engine T4). */
 @Import({TestcontainersConfiguration.class, ScanQueueTest.Engines.class})
 @SpringBootTest(properties = {
+        "geomaster.providers.real-adapters=false",
         "geomaster.scan.worker.enabled=false",          // the test drives the queue
         "geomaster.scan.worker.max-attempts=3",
         "geomaster.scan.worker.backoff-base=0s",
