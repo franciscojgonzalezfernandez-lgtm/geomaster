@@ -22,7 +22,11 @@ Ordered so the slice is demonstrable end-to-end as early as possible.
       Postgres session via the Kysely adapter over `app_user`/`auth_*`; first-sign-in calls
       `POST /v1/users/me`. (REQ-1, REQ-2, REQ-3; ADR-0017, ADR-0014)
       Done without the organization plugin (see design); provisioning call moves to T9 with the token.
+<<<<<<< HEAD
 - [x] T9 — Web: enable Better Auth JWT plugin (EdDSA + JWKS endpoint); service-token helper wrapping
+=======
+- [ ] T9 — Web: enable Better Auth JWT plugin (EdDSA + JWKS endpoint); service-token helper wrapping
+>>>>>>> origin/main
       the typed core client. (REQ-4; ADR-0017)
 - [ ] T10 — Web UI: sign-in page, create-project form, project list; interface-language switcher
       persisting `interface_locale`; all strings in `packages/i18n` EN/DE/FR/ES. (REQ-15, REQ-16; NFR-08)
