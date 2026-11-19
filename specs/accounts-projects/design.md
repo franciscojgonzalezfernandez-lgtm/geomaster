@@ -23,8 +23,12 @@ Browser → apps/web (Better Auth: magic link / Google; organization + JWT plugi
 ### apps/web
 - Better Auth with the magic-link plugin (email via Resend, ADR-0014) and the Google social
   provider; database sessions in Postgres via Better Auth's Kysely adapter over introspected types
-  (ADR-0005: web never migrates). The **organization plugin** backs the tenant model (org ↔
-  `account`, member ↔ `account_member`).
+  (ADR-0005: web never migrates). The tenant is the business `account` that core provisions on
+  `POST /v1/users/me`; the session stores it in `auth_session.active_account_id` (a Better Auth
+  additional session field). The organization plugin is **not** used: it needs columns the
+  `account` table does not have (slug, logo, metadata) and an invitation table, and core already
+  owns account creation. Multi-user accounts (FR-ACC-03, launch) revisit this.
+  Better Auth always maps an `auth_identity.password` column, so Flyway V4 adds it (unused).
 - Service-token minting: Better Auth's **JWT plugin** issues a short-lived (≤ 2 min) EdDSA JWT with
   `sub`, `acct`, `plan`, `iat`, `exp`; the signing key is exposed at the app's JWKS endpoint. One
   helper wraps the generated OpenAPI fetch client and attaches `Authorization: Bearer <token>` on

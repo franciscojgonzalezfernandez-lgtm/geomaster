@@ -18,9 +18,10 @@ Ordered so the slice is demonstrable end-to-end as early as possible.
       CI drift check. (ADR-0016)
 - [ ] T7 — Core tests (JUnit + Testcontainers): provisioning, returning-user reuse, tenant
       isolation 404, idempotent create, plan-limit 422, invalid-token 401. (REQ-2..REQ-13)
-- [ ] T8 — Web: Better Auth (magic-link plugin via Resend + Google social + organization plugin),
+- [x] T8 — Web: Better Auth (magic-link plugin via Resend + Google social + organization plugin),
       Postgres session via the Kysely adapter over `app_user`/`auth_*`; first-sign-in calls
       `POST /v1/users/me`. (REQ-1, REQ-2, REQ-3; ADR-0017, ADR-0014)
+      Done without the organization plugin (see design); provisioning call moves to T9 with the token.
 - [ ] T9 — Web: enable Better Auth JWT plugin (EdDSA + JWKS endpoint); service-token helper wrapping
       the typed core client. (REQ-4; ADR-0017)
 - [ ] T10 — Web UI: sign-in page, create-project form, project list; interface-language switcher
