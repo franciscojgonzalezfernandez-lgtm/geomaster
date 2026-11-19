@@ -1,0 +1,66 @@
+{
+  "id": "resp_fixture_1",
+  "object": "response",
+  "created_at": 1763500000,
+  "status": "completed",
+  "error": null,
+  "incomplete_details": null,
+  "instructions": null,
+  "max_output_tokens": null,
+  "max_tool_calls": 2,
+  "model": "chat-latest-2026-11-01",
+  "output": [
+    {
+      "id": "ws_1",
+      "type": "web_search_call",
+      "status": "completed",
+      "action": {
+        "type": "search",
+        "query": "Snowboardschule Flumserberg",
+        "queries": ["Snowboardschule Flumserberg", "Flumserberg snowboard lessons"],
+        "sources": [{"type": "url", "url": "https://www.rideflumserberg.ch/"}]
+      }
+    },
+    {
+      "id": "ws_2",
+      "type": "web_search_call",
+      "status": "completed",
+      "action": {
+        "type": "open_page",
+        "url": "https://www.rideflumserberg.ch/kurse"
+      }
+    },
+    {
+      "id": "msg_1",
+      "type": "message",
+      "status": "completed",
+      "role": "assistant",
+      "content": [
+        {
+          "type": "output_text",
+          "text": "Am Flumserberg ist Ride Flumserberg eine gute Wahl ([rideflumserberg.ch](https://www.rideflumserberg.ch/)). Auch die Schweizer Skischule bietet Kurse an ([skischule.ch](https://www.skischule-flumserberg.ch/)).",
+          "logprobs": [],
+          "annotations": [
+            {"type": "url_citation", "start_index": 49, "end_index": 99, "title": "Ride Flumserberg", "url": "https://www.rideflumserberg.ch/"},
+            {"type": "url_citation", "start_index": 140, "end_index": 196, "title": "Skischule Flumserberg", "url": "https://www.skischule-flumserberg.ch/"},
+            {"type": "url_citation", "start_index": 0, "end_index": 10, "title": "Ride Flumserberg (dup)", "url": "https://www.rideflumserberg.ch/"}
+          ]
+        }
+      ]
+    }
+  ],
+  "parallel_tool_calls": true,
+  "store": false,
+  "temperature": 1.0,
+  "tool_choice": "auto",
+  "tools": [{"type": "web_search", "user_location": {"type": "approximate", "country": "CH", "region": "St. Gallen"}}],
+  "top_p": 1.0,
+  "tool_usage": {"web_search": {"num_requests": 1}, "image_gen": {"input_tokens": 0, "output_tokens": 0}},
+  "usage": {
+    "input_tokens": 7421,
+    "input_tokens_details": {"cached_tokens": 0},
+    "output_tokens": 312,
+    "output_tokens_details": {"reasoning_tokens": 0},
+    "total_tokens": 7733
+  }
+}
