@@ -14,10 +14,7 @@
     "@geomaster/plans": "workspace:*",
     "better-auth": "1.7.17",
     "next": "16.4.5",
-<<<<<<< HEAD
     "openapi-fetch": "0.17.0",
-=======
->>>>>>> origin/main
     "pg": "8.23.1",
     "react": "19.3.0",
     "react-dom": "19.3.0",
