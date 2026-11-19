@@ -20,6 +20,9 @@ public class ServiceTokenConfig {
         HttpClient http = HttpClient.newBuilder()
                 .connectTimeout(Duration.ofSeconds(3))
                 .followRedirects(HttpClient.Redirect.NEVER)
+                // HTTP/1.1 only: over plain http the JDK default tries an h2c upgrade, which the Next.js
+                // server answers with an empty response ("header parser received no bytes").
+                .version(HttpClient.Version.HTTP_1_1)
                 .build();
         return new RemoteJwks(props, http, Clock.systemUTC());
     }
