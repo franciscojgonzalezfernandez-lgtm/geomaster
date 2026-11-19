@@ -1,5 +1,8 @@
 package com.geomaster.core.scan;
 
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.ReentrantLock;
+
 import com.geomaster.core.providers.AnswerRequest;
 import com.geomaster.core.providers.CostCalculator;
 import com.geomaster.core.providers.ProviderAdapter;
@@ -34,6 +37,11 @@ public final class UnitExecutor {
     private final ProvidersProperties providers;
     private final ScanWorkerProperties props;
     private final Clock clock;
+    /**
+     * Single-flight per cache key in this instance: units with the same question (other accounts,
+     * other samples' siblings) wait for the first call instead of paying for a duplicate (FR-SCN-04).
+     */
+    private final ConcurrentHashMap<String, ReentrantLock> inFlight = new ConcurrentHashMap<>();
 
     public UnitExecutor(ScanQueueRepository queue, LlmCallRepository calls, CostCalculator costs,
                         ProvidersProperties providers, ScanWorkerProperties props, Clock clock) {
@@ -50,6 +58,21 @@ public final class UnitExecutor {
         String key = CacheKey.of(u.promptText(), u.engine(), engine.model(), u.locale(), u.country(), u.region(),
                 LocalDate.ofInstant(clock.instant(), ZoneOffset.UTC));
 
+        ReentrantLock lock = inFlight.computeIfAbsent(key, k -> new ReentrantLock());
+        lock.lock();
+        try {
+            return runLocked(u, adapter, engine, key);
+        } finally {
+            lock.unlock();
+            // A later unit with this key will create a fresh lock and then find the cached answer.
+            if (!lock.hasQueuedThreads()) {
+                inFlight.remove(key, lock);
+            }
+        }
+    }
+
+    private Outcome runLocked(ClaimedUnit u, ProviderAdapter adapter, ProvidersProperties.EngineProperties engine,
+                              String key) {
         Optional<UUID> cached = calls.findByCacheKey(key);
         if (cached.isPresent()) {
             return queue.markDone(u, cached.get(), true, BigDecimal.ZERO) ? Outcome.CACHE_HIT : Outcome.LOST_LEASE;
