@@ -1,7 +1,7 @@
 name: CI core
 on:
+  # No path filter on PRs: this job is a required check and must always report (ADR-0019).
   pull_request:
-    paths: ["apps/core/**", "packages/plans/**", "packages/api-contract/**", "gradle/**", "gradlew", "settings.gradle.kts", ".github/workflows/ci-core.yml"]
   push:
     branches: [main]
     paths: ["apps/core/**", "packages/plans/**", "packages/api-contract/**", "gradle/**", "gradlew", "settings.gradle.kts"]

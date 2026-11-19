@@ -1,6 +1,6 @@
 # ADR-0018: Automated PR review and conditional auto-approval with Claude cloud agents
 
-- Status: Accepted
+- Status: Superseded by ADR-0019
 - Date: 2026-10-09
 - Deciders: Javi
 - Related requirements: NFR-05, NFR-11, FR-EXT-03 (extends ADR-0013)

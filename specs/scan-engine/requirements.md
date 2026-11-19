@@ -21,7 +21,7 @@ cheap (≤ CHF 0.05 per answer, shared cache).
 ## Acceptance criteria (EARS)
 
 ### Prompts (minimal, before the onboarding agent exists)
-- REQ-1: WHEN a user adds a prompt to a project, THE SYSTEM SHALL store its text, measurement language and topic (one of the 6 FR-ONB-03 topics), and reject it with 422 if the project's prompt count would exceed the plan's `prompts` limit (counted as prompt × language).
+- REQ-1: WHEN a user adds a prompt to a project, THE SYSTEM SHALL store its text, measurement language and topic (one of the 6 FR-ONB-03 topics), and reject it with 422 if the language is not one of the project's measurement languages or if the account's active prompt count would exceed the plan's `prompts` limit (one prompt = one prompt × language; counted per account, as in the PRD economics).
 - REQ-2: WHEN a user edits or deletes a prompt, THE SYSTEM SHALL keep past answers linked to the prompt version they were asked with (NFR-13); a deleted prompt is not asked again.
 
 ### Scan planning

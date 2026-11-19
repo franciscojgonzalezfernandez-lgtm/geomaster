@@ -1,7 +1,7 @@
 name: CI web
 on:
+  # No path filter on PRs: this job is a required check and must always report (ADR-0019).
   pull_request:
-    paths: ["apps/web/**", "packages/**", "package.json", "pnpm-lock.yaml", "pnpm-workspace.yaml", "turbo.json", ".github/workflows/ci-web.yml"]
   push:
     branches: [main]
     paths: ["apps/web/**", "packages/**", "package.json", "pnpm-lock.yaml", "pnpm-workspace.yaml", "turbo.json"]
