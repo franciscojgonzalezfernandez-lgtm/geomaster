@@ -1,24 +1,10 @@
 package com.geomaster.core.accounts;
 
-import com.geomaster.core.TestcontainersConfiguration;
-import com.geomaster.core.auth.SigningKeys;
-import com.geomaster.core.auth.TestTokens;
-import com.geomaster.core.plans.Plans;
+import com.geomaster.core.ApiTestSupport;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Import;
-import org.springframework.context.annotation.Primary;
 import org.springframework.http.MediaType;
-import org.springframework.jdbc.core.simple.JdbcClient;
-import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 
-import java.time.Duration;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -32,67 +18,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/** End-to-end core API over a real Postgres (Testcontainers), signed with a test Ed25519 key. */
-@Import({TestcontainersConfiguration.class, AccountsApiTest.Keys.class})
-@SpringBootTest(properties = {
-        "geomaster.auth.issuer=" + TestTokens.ISSUER,
-        "geomaster.auth.audience=" + TestTokens.AUDIENCE})
-@AutoConfigureMockMvc
-class AccountsApiTest {
-
-    static final TestTokens TOKENS = new TestTokens("test-key");
-
-    @TestConfiguration
-    static class Keys {
-        @Bean
-        @Primary
-        SigningKeys testSigningKeys() {
-            return TOKENS.keys();
-        }
-    }
-
-    @Autowired
-    MockMvc mvc;
-
-    @Autowired
-    JdbcClient db;
-
-    @Autowired
-    Plans plans;
-
-    /** A signed-in user as Better Auth would create it, plus their provisioned account. */
-    record Session(UUID userId, UUID accountId, String planId) {
-        String token() {
-            return token(accountId, planId);
-        }
-
-        String token(UUID acct, String plan) {
-            return "Bearer " + TOKENS.sign("EdDSA", "test-key", TestTokens.claims(Instant.now(), Duration.ofMinutes(2),
-                    userId.toString(), acct == null ? null : acct.toString(), plan));
-        }
-    }
-
-    UUID newUser() {
-        return db.sql("INSERT INTO app_user (email, name) VALUES (:email, 'Test User') RETURNING id")
-                .param("email", UUID.randomUUID() + "@example.com")
-                .query(UUID.class)
-                .single();
-    }
-
-    Session signIn() throws Exception {
-        UUID user = newUser();
-        Session provisioning = new Session(user, null, null);
-        String body = mvc.perform(post("/v1/users/me").header("Authorization", provisioning.token()))
-                .andExpect(status().isCreated())
-                .andReturn().getResponse().getContentAsString();
-        UUID acct = UUID.fromString(body.replaceAll(".*\"account\":\\{\"id\":\"([0-9a-f-]+)\".*", "$1"));
-        return new Session(user, acct, "free");
-    }
-
-    ResultActions createProject(Session s, String json) throws Exception {
-        return mvc.perform(post("/v1/projects").header("Authorization", s.token())
-                .contentType(MediaType.APPLICATION_JSON).content(json));
-    }
+/** End-to-end accounts/projects API over a real Postgres (Testcontainers). */
+class AccountsApiTest extends ApiTestSupport {
 
     @Test
     void firstSignInProvisionsOneFreeAccountAndReturningUserReusesIt() throws Exception {
