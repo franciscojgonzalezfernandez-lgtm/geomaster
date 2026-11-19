@@ -16,12 +16,12 @@ Context that is not fully captured in the PRD or the ADRs. Read after `docs/PRD.
 
 - Cost assumption: CHF 0.05 per response (prompt × engine × language × run, with web search), CHF 0.25 per scan for recommendations, CHF 0.10 per artifact.
 - Web search pricing seen on 2026-10-08: OpenAI $10 / 1k calls; Claude $10 / 1k searches; Gemini 3 grounding $14 / 1k queries after 5,000 free per month.
-- Hard rule: monthly loss never above CHF 400. Fixed costs ~CHF 130 (Vercel already paid ~USD 21/month). Break-even ≈ 5 paying customers.
+- Hard rule: monthly loss never above CHF 400. Fixed costs ~CHF 100 (PR review agents dropped, ADR-0019) (Vercel already paid ~USD 21/month). Break-even ≈ 5 paying customers.
 - Daily scanning is deliberately an add-on, not a plan feature (cost).
 
 ## Working preferences of the owner
 
-- Spec Driven Development; uses Kiro and Claude Code; agent PR review workflows in GitHub Actions (copy from the owner's other repos).
+- Spec Driven Development; uses Kiro and Claude Code; PRs merge automatically when CI tests pass; no agent review gate (ADR-0019, 2026-11-19).
 - ~10 h/week. Closed beta 2026-12-14, public launch 2027-02-15.
 - Wants Java in the portfolio: domain lives in `apps/core` (Spring Boot), UI in `apps/web` (Next.js).
 - Product conversation in Spanish; repository artifacts in English.
