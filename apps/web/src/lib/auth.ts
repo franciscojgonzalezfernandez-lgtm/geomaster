@@ -2,9 +2,10 @@ import "server-only";
 
 import { betterAuth } from "better-auth";
 import { nextCookies } from "better-auth/next-js";
+import { jwt } from "better-auth/plugins";
 import { magicLink } from "better-auth/plugins/magic-link";
-import { Pool } from "pg";
 
+import { db } from "./db";
 import { sendMagicLinkEmail } from "./email";
 
 /**
@@ -15,7 +16,9 @@ import { sendMagicLinkEmail } from "./email";
 export const auth = betterAuth({
   baseURL: process.env.BETTER_AUTH_URL,
   secret: process.env.BETTER_AUTH_SECRET,
-  database: new Pool({ connectionString: process.env.DATABASE_URL }),
+  database: db,
+  // Service tokens are minted server-side only (src/lib/core.ts); never hand them to the browser.
+  disabledPaths: ["/token"],
   advanced: {
     database: { generateId: "uuid" },
   },
@@ -73,7 +76,45 @@ export const auth = betterAuth({
       enabled: Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET),
     },
   },
+  databaseHooks: {
+    session: {
+      create: {
+        // First sign-in: core provisions the personal account; the session remembers it. If core
+        // is down, sign-in still succeeds and coreFor() provisions on the first core call.
+        before: async (session) => {
+          try {
+            const { provisionAccount } = await import("./core");
+            return { data: { ...session, activeAccountId: await provisionAccount(session.userId) } };
+          } catch (e) {
+            console.warn(`[auth] account provisioning deferred: ${e instanceof Error ? e.message : String(e)}`);
+            return { data: session };
+          }
+        },
+      },
+    },
+  },
   plugins: [
+    // EdDSA/Ed25519 service tokens for core; public keys at /api/auth/jwks (ADR-0017).
+    jwt({
+      jwks: { keyPairConfig: { alg: "EdDSA", crv: "Ed25519" } },
+      jwt: {
+        issuer: process.env.SERVICE_TOKEN_ISSUER ?? process.env.BETTER_AUTH_URL,
+        audience: process.env.SERVICE_TOKEN_AUDIENCE ?? process.env.BETTER_AUTH_URL,
+        expirationTime: "1m",
+      },
+      disableSettingJwtHeader: true,
+      schema: {
+        jwks: {
+          modelName: "auth_jwks",
+          fields: {
+            publicKey: "public_key",
+            privateKey: "private_key",
+            createdAt: "created_at",
+            expiresAt: "expires_at",
+          },
+        },
+      },
+    }),
     magicLink({
       expiresIn: 15 * 60,
       sendMagicLink: async ({ email, url }) => sendMagicLinkEmail(email, url),

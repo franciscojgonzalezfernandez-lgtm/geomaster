@@ -10,9 +10,11 @@
     "typecheck": "next typegen && tsc --noEmit"
   },
   "dependencies": {
+    "@geomaster/api-contract": "workspace:*",
     "@geomaster/plans": "workspace:*",
     "better-auth": "1.7.17",
     "next": "16.4.5",
+    "openapi-fetch": "0.17.0",
     "pg": "8.23.1",
     "react": "19.3.0",
     "react-dom": "19.3.0",
