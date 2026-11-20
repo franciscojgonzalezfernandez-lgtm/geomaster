@@ -1,1 +1,90 @@
-{}
+{
+  "Metadata": {
+    "title": "GEOMASTER — AI search visibility for your brand",
+    "description": "Measure and improve how ChatGPT, Gemini and Claude mention your brand in EN, DE, FR and ES."
+  },
+  "Home": {
+    "tagline": "See how ChatGPT, Gemini and Claude talk about your brand, in English, German, French and Spanish.",
+    "beta": "Closed beta from December 2026 · {count} self-serve plans",
+    "cta": "Sign in"
+  },
+  "Nav": {
+    "projects": "Projects",
+    "signOut": "Sign out",
+    "language": "Interface language",
+    "skipToContent": "Skip to content"
+  },
+  "SignIn": {
+    "title": "Sign in to GEOMASTER",
+    "subtitle": "We email you a sign-in link. No password needed.",
+    "emailLabel": "Work email",
+    "submit": "Email me a sign-in link",
+    "sending": "Sending…",
+    "or": "or",
+    "google": "Continue with Google",
+    "checkTitle": "Check your inbox",
+    "checkBody": "We sent a sign-in link to {email}. It expires in 15 minutes and works once.",
+    "useDifferent": "Use a different email",
+    "error": "We could not send the link. Check the address and try again."
+  },
+  "Projects": {
+    "title": "Projects",
+    "new": "New project",
+    "empty": "No projects yet. Add your domain to start measuring.",
+    "loading": "Loading projects…",
+    "loadError": "Projects could not be loaded. Try again in a moment.",
+    "languages": "Measurement languages",
+    "market": "Market",
+    "created": "Created {date}",
+    "status": {
+      "active": "Active",
+      "paused": "Paused",
+      "archived": "Archived"
+    },
+    "planUsage": "{used} of {allowed} domains on the {plan} plan"
+  },
+  "NewProject": {
+    "title": "New project",
+    "intro": "One project measures one domain in the languages and market you choose.",
+    "domain": "Domain",
+    "domainHint": "For example example.ch. No https:// needed.",
+    "languages": "Measurement languages",
+    "languagesHint": "Your plan includes up to {max, plural, one {# language} other {# languages}}.",
+    "country": "Country",
+    "countryPlaceholder": "Choose a country",
+    "region": "Region or city (optional)",
+    "regionHint": "For example Zürich or Flumserberg.",
+    "submit": "Create project",
+    "submitting": "Creating…",
+    "cancel": "Cancel",
+    "errors": {
+      "domain": "Enter a valid domain, for example example.ch.",
+      "languages": "Choose at least one measurement language.",
+      "languagesLimit": "Your plan allows {allowed, plural, one {# language} other {# languages}} per project.",
+      "country": "Choose a country.",
+      "region": "Keep the region under 100 characters.",
+      "domainsLimit": "Your plan allows {allowed, plural, one {# domain} other {# domains}}. Upgrade to add more.",
+      "generic": "The project could not be created. Try again in a moment."
+    }
+  },
+  "Languages": {
+    "en": "English",
+    "de": "German",
+    "fr": "French",
+    "es": "Spanish"
+  },
+  "Plans": {
+    "free": "Free",
+    "starter": "Starter",
+    "pro": "Pro",
+    "premium": "Premium",
+    "enterprise": "Enterprise"
+  },
+  "Email": {
+    "magicLinkSubject": "Your GEOMASTER sign-in link",
+    "magicLinkHeading": "Sign in to GEOMASTER",
+    "magicLinkBody": "Click the button to sign in. The link expires in 15 minutes and works once.",
+    "magicLinkButton": "Sign in",
+    "magicLinkIgnore": "If you did not ask to sign in, you can ignore this email."
+  }
+}
