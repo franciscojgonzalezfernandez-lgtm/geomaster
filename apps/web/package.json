@@ -11,9 +11,11 @@
   },
   "dependencies": {
     "@geomaster/api-contract": "workspace:*",
+    "@geomaster/i18n": "workspace:*",
     "@geomaster/plans": "workspace:*",
     "better-auth": "1.7.17",
     "next": "16.4.5",
+    "next-intl": "4.15.3",
     "openapi-fetch": "0.17.0",
     "pg": "8.23.1",
     "react": "19.3.0",

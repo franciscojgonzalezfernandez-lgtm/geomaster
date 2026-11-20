@@ -5,6 +5,8 @@ import { nextCookies } from "better-auth/next-js";
 import { jwt } from "better-auth/plugins";
 import { magicLink } from "better-auth/plugins/magic-link";
 
+import { localeFromHeaders } from "@/i18n/negotiate";
+
 import { db } from "./db";
 import { sendMagicLinkEmail } from "./email";
 
@@ -28,6 +30,10 @@ export const auth = betterAuth({
       emailVerified: "email_verified",
       createdAt: "created_at",
       updatedAt: "updated_at",
+    },
+    additionalFields: {
+      // REQ-15: interface language, independent of any project's measurement languages.
+      interfaceLocale: { type: "string", required: false, input: false, fieldName: "interface_locale" },
     },
   },
   session: {
@@ -77,6 +83,14 @@ export const auth = betterAuth({
     },
   },
   databaseHooks: {
+    user: {
+      create: {
+        // A new user starts in the language they signed up in (cookie, then Accept-Language).
+        before: async (user, ctx) => ({
+          data: { ...user, interfaceLocale: localeFromHeaders(ctx?.request?.headers ?? ctx?.headers) },
+        }),
+      },
+    },
     session: {
       create: {
         // First sign-in: core provisions the personal account; the session remembers it. If core

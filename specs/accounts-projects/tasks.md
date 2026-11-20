@@ -24,14 +24,14 @@ Ordered so the slice is demonstrable end-to-end as early as possible.
       Done without the organization plugin (see design); provisioning call moves to T9 with the token.
 - [x] T9 — Web: enable Better Auth JWT plugin (EdDSA + JWKS endpoint); service-token helper wrapping
       the typed core client. (REQ-4; ADR-0017)
-- [ ] T10 — Web UI: sign-in page, create-project form, project list; interface-language switcher
+- [x] T10 — Web UI: sign-in page, create-project form, project list; interface-language switcher
       persisting `interface_locale`; all strings in `packages/i18n` EN/DE/FR/ES. (REQ-15, REQ-16; NFR-08)
 - [ ] T11 — Web tests: Vitest (plan-limit helper, token shape), Playwright (sign-in → create →
       list), Lighthouse CI ≥ 0.9 on `/[locale]/signin`. (NFR-09; ADR-0013)
 - [ ] T12 — Account deletion endpoint + UI removing all data for the `account_id`. (REQ-18; NFR-06)
 - [x] T13 — Core smoke job: boot core against ephemeral pgvector Postgres, assert `/actuator/health`
       UP (actuator already in `build.gradle.kts`). Done in `.github/workflows/ci-smoke.yml`. (ADR-0013)
-- [ ] T14 — Web smoke currently asserts `/` 200 (`ci-smoke.yml`); switch target to `/[locale]/signin`
+- [x] T14 — Web smoke currently asserts `/` 200 (`ci-smoke.yml`); switch target to `/[locale]/signin`
       once the sign-in route lands. (ADR-0013 smoke gate)
 - [x] T15 — Contract-drift CI: gradle task exports springdoc OpenAPI, CI regenerates and
       `git diff --exit-code` against `packages/api-contract/openapi.yaml`. (ADR-0016)
