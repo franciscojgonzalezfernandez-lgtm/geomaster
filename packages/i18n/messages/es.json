@@ -1,1 +1,90 @@
-{}
+{
+  "Metadata": {
+    "title": "GEOMASTER — Visibilidad de tu marca en las IA",
+    "description": "Mide y mejora cómo ChatGPT, Gemini y Claude mencionan tu marca, en inglés, alemán, francés y español."
+  },
+  "Home": {
+    "tagline": "Descubre cómo hablan ChatGPT, Gemini y Claude de tu marca, en inglés, alemán, francés y español.",
+    "beta": "Beta cerrada desde diciembre de 2026 · {count} planes de autoservicio",
+    "cta": "Iniciar sesión"
+  },
+  "Nav": {
+    "projects": "Proyectos",
+    "signOut": "Cerrar sesión",
+    "language": "Idioma de la interfaz",
+    "skipToContent": "Saltar al contenido"
+  },
+  "SignIn": {
+    "title": "Inicia sesión en GEOMASTER",
+    "subtitle": "Te enviamos un enlace de acceso por email. Sin contraseña.",
+    "emailLabel": "Email de trabajo",
+    "submit": "Enviarme un enlace de acceso",
+    "sending": "Enviando…",
+    "or": "o",
+    "google": "Continuar con Google",
+    "checkTitle": "Revisa tu bandeja de entrada",
+    "checkBody": "Hemos enviado un enlace de acceso a {email}. Caduca en 15 minutos y solo funciona una vez.",
+    "useDifferent": "Usar otro email",
+    "error": "No pudimos enviar el enlace. Revisa la dirección e inténtalo de nuevo."
+  },
+  "Projects": {
+    "title": "Proyectos",
+    "new": "Nuevo proyecto",
+    "empty": "Aún no tienes proyectos. Añade tu dominio para empezar a medir.",
+    "loading": "Cargando proyectos…",
+    "loadError": "No se pudieron cargar los proyectos. Inténtalo de nuevo en un momento.",
+    "languages": "Idiomas de medición",
+    "market": "Mercado",
+    "created": "Creado el {date}",
+    "status": {
+      "active": "Activo",
+      "paused": "En pausa",
+      "archived": "Archivado"
+    },
+    "planUsage": "{used} de {allowed} dominios en el plan {plan}"
+  },
+  "NewProject": {
+    "title": "Nuevo proyecto",
+    "intro": "Un proyecto mide un dominio en los idiomas y el mercado que elijas.",
+    "domain": "Dominio",
+    "domainHint": "Por ejemplo ejemplo.ch. Sin https://.",
+    "languages": "Idiomas de medición",
+    "languagesHint": "Tu plan incluye hasta {max, plural, one {# idioma} other {# idiomas}}.",
+    "country": "País",
+    "countryPlaceholder": "Elige un país",
+    "region": "Región o ciudad (opcional)",
+    "regionHint": "Por ejemplo Zúrich o Flumserberg.",
+    "submit": "Crear proyecto",
+    "submitting": "Creando…",
+    "cancel": "Cancelar",
+    "errors": {
+      "domain": "Introduce un dominio válido, por ejemplo ejemplo.ch.",
+      "languages": "Elige al menos un idioma de medición.",
+      "languagesLimit": "Tu plan permite {allowed, plural, one {# idioma} other {# idiomas}} por proyecto.",
+      "country": "Elige un país.",
+      "region": "La región debe tener menos de 100 caracteres.",
+      "domainsLimit": "Tu plan permite {allowed, plural, one {# dominio} other {# dominios}}. Cambia de plan para añadir más.",
+      "generic": "No se pudo crear el proyecto. Inténtalo de nuevo en un momento."
+    }
+  },
+  "Languages": {
+    "en": "Inglés",
+    "de": "Alemán",
+    "fr": "Francés",
+    "es": "Español"
+  },
+  "Plans": {
+    "free": "Free",
+    "starter": "Starter",
+    "pro": "Pro",
+    "premium": "Premium",
+    "enterprise": "Enterprise"
+  },
+  "Email": {
+    "magicLinkSubject": "Tu enlace de acceso a GEOMASTER",
+    "magicLinkHeading": "Inicia sesión en GEOMASTER",
+    "magicLinkBody": "Pulsa el botón para iniciar sesión. El enlace caduca en 15 minutos y solo funciona una vez.",
+    "magicLinkButton": "Iniciar sesión",
+    "magicLinkIgnore": "Si no has pedido iniciar sesión, puedes ignorar este email."
+  }
+}
