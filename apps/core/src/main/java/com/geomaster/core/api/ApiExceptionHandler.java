@@ -1,6 +1,7 @@
 package com.geomaster.core.api;
 
 import com.geomaster.core.plans.PlanLimitExceededException;
+import com.geomaster.core.scan.ScanRefusedException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -35,6 +36,15 @@ public class ApiExceptionHandler {
         p.setProperty("limit", e.limit());
         p.setProperty("allowed", e.allowed());
         p.setProperty("planId", e.planId());
+        return p;
+    }
+
+    /** REQ-6/REQ-16/REQ-18: the scan was not started; {@code reason} is a stable code the web translates. */
+    @ExceptionHandler(ScanRefusedException.class)
+    ProblemDetail scanRefused(ScanRefusedException e) {
+        ProblemDetail p = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, e.getMessage());
+        p.setTitle("Scan not started");
+        p.setProperty("reason", e.reason().name().toLowerCase(java.util.Locale.ROOT));
         return p;
     }
 }
