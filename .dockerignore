@@ -1,0 +1,16 @@
+# Docker build context is the repo root (apps/core/Dockerfile); send only what core needs.
+**/node_modules
+**/.next
+**/.turbo
+**/build
+**/.gradle
+.git
+apps/web
+packages/api-contract
+packages/i18n
+packages/ui
+docs
+specs
+*.log
+.env
+.env.*

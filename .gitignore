@@ -24,3 +24,4 @@ build/
 .lighthouseci/
 test-results/
 playwright-report/
+.vercel
