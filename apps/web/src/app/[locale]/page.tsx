@@ -1,8 +1,16 @@
 import { plans } from "@geomaster/plans";
 import { getTranslations } from "next-intl/server";
 
+import type { Metadata } from "next";
+
 import { LocaleSwitcher } from "@/components/locale-switcher";
+import { localeAlternates } from "@/i18n/alternates";
 import { Link } from "@/i18n/navigation";
+import { currentLocale } from "@/lib/locale";
+
+export async function generateMetadata(): Promise<Metadata> {
+  return { alternates: localeAlternates(await currentLocale()) };
+}
 
 export default async function Home() {
   const t = await getTranslations("Home");

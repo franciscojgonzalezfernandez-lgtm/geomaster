@@ -16,5 +16,5 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm turbo run lint typecheck build --filter=@geomaster/web...
-      # Lighthouse CI budgets (≥ 0.9 in all four categories) are added in the i18n/landing specs (ADR-0013).
+      # Unit tests (Vitest) run here; e2e and Lighthouse need core + Postgres and run in web-smoke.
+      - run: pnpm turbo run lint typecheck build test --filter=@geomaster/web...

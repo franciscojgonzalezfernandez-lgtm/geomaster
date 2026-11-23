@@ -1,4 +1,9 @@
+import type { Metadata } from "next";
+
 import { AppHeader } from "@/components/app-header";
+
+/** Signed-in pages are private: keep them out of search indexes. */
+export const metadata: Metadata = { robots: { index: false, follow: false } };
 
 export default function ProjectsLayout({ children }: LayoutProps<"/[locale]/projects">) {
   return (

@@ -1,13 +1,21 @@
+import type { Metadata } from "next";
 import { locale as rootLocale } from "next/root-params";
 import { getTranslations } from "next-intl/server";
 import { Suspense } from "react";
 
 import { LocaleSwitcher } from "@/components/locale-switcher";
+import { localeAlternates } from "@/i18n/alternates";
 import { redirect } from "@/i18n/navigation";
 import { isAppLocale, routing } from "@/i18n/routing";
+import { currentLocale } from "@/lib/locale";
 import { getSession } from "@/lib/session";
 
 import { SignInForm } from "./sign-in-form";
+
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("SignIn");
+  return { title: `${t("title")}`, alternates: localeAlternates(await currentLocale(), "/signin") };
+}
 
 /** Already signed in? Go straight to the projects. Reads cookies, so it streams behind Suspense. */
 async function RedirectIfSignedIn() {
