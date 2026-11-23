@@ -16,9 +16,9 @@ import java.time.Clock;
 public class ScanWorkerConfig {
 
     @Bean
-    UnitExecutor unitExecutor(ScanQueueRepository queue, LlmCallRepository calls, CostCalculator costs,
-                              ProvidersProperties providers, ScanWorkerProperties props) {
-        return new UnitExecutor(queue, calls, costs, providers, props, Clock.systemUTC());
+    UnitExecutor unitExecutor(ScanQueueRepository queue, ScanFinalizer finalizer, LlmCallRepository calls,
+                              CostCalculator costs, ProvidersProperties providers, ScanWorkerProperties props) {
+        return new UnitExecutor(queue, finalizer, calls, costs, providers, props, Clock.systemUTC());
     }
 
     @Bean
