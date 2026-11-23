@@ -5,9 +5,7 @@ import createClient from "openapi-fetch";
 
 import { auth } from "./auth";
 import { db } from "./db";
-
-/** Lifetime of a service token. Core rejects anything above 2 minutes (ADR-0017). */
-const TOKEN_TTL_SECONDS = 60;
+import { serviceTokenClaims } from "./token-claims";
 
 const coreUrl = () => process.env.CORE_URL ?? "http://localhost:8080";
 
@@ -16,13 +14,7 @@ const coreUrl = () => process.env.CORE_URL ?? "http://localhost:8080";
  * one it is the provisioning token core accepts only on `POST /v1/users/me`.
  */
 async function mintServiceToken(userId: string, account?: { id: string; planId: string }): Promise<string> {
-  const iat = Math.floor(Date.now() / 1000);
-  const payload: Record<string, unknown> = { sub: userId, iat, exp: iat + TOKEN_TTL_SECONDS };
-  if (account) {
-    payload.acct = account.id;
-    payload.plan = account.planId;
-  }
-  const { token } = await auth.api.signJWT({ body: { payload } });
+  const { token } = await auth.api.signJWT({ body: { payload: serviceTokenClaims(userId, account) } });
   return token;
 }
 

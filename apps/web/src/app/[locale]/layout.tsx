@@ -21,9 +21,8 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     title: t("title"),
     description: t("description"),
-    alternates: {
-      languages: Object.fromEntries(routing.locales.map((l) => [l, `/${l}`])),
-    },
+    // Absolute canonical and hreflang URLs need the public origin.
+    metadataBase: new URL(process.env.SITE_URL ?? process.env.BETTER_AUTH_URL ?? "http://localhost:3000"),
   };
 }
 

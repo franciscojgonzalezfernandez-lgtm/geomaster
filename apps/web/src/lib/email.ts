@@ -40,13 +40,14 @@ export async function magicLinkEmail(url: string, locale: AppLocale) {
 
 /**
  * Magic-link delivery (ADR-0014). With `EMAIL_TRANSPORT=log` (local dev and tests) the link is
- * written to the server log instead of being sent. Production requires RESEND_API_KEY.
+ * written to the server log instead of being sent (refused on Vercel). Deployments require RESEND_API_KEY.
  */
 export async function sendMagicLinkEmail(email: string, url: string): Promise<void> {
   const locale = localeFromMagicLink(url);
   if (process.env.EMAIL_TRANSPORT === "log") {
-    if (process.env.NODE_ENV === "production") {
-      throw new Error("EMAIL_TRANSPORT=log is not allowed in production");
+    // Local dev and CI e2e (a production build on localhost) only; never on a Vercel deployment.
+    if (process.env.VERCEL_ENV) {
+      throw new Error("EMAIL_TRANSPORT=log is not allowed on Vercel deployments");
     }
     console.info(`[magic-link] ${email} (${locale}) ${url}`);
     return;

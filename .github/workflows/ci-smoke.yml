@@ -5,7 +5,7 @@ name: CI smoke
 
 # No `paths` filter on pull_request, on purpose: web-smoke and core-smoke are REQUIRED checks on
 # main, and a path-filtered workflow that never starts leaves them "Expected" forever, which
-# blocks the PR (and the Claude review, which is triggered by this workflow's completion).
+# blocks the PR (ADR-0019).
 on:
   pull_request:
   push:
@@ -13,7 +13,26 @@ on:
 
 jobs:
   web-smoke:
+    # Boots the real system (Postgres + core + web production build), then runs the Playwright
+    # e2e (sign-in → create project → list) and Lighthouse CI on /[locale]/signin (T11, ADR-0013).
     runs-on: ubuntu-latest
+    services:
+      db:
+        image: pgvector/pgvector:pg17
+        env:
+          POSTGRES_USER: geomaster
+          POSTGRES_PASSWORD: geomaster
+          POSTGRES_DB: geomaster
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U geomaster"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: postgres://geomaster:geomaster@localhost:5432/geomaster
+      BETTER_AUTH_URL: http://localhost:3000
+      CORE_URL: http://localhost:8080
+      EMAIL_TRANSPORT: log
+      WEB_LOG: ${{ github.workspace }}/web.log
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -21,19 +40,54 @@ jobs:
         with:
           node-version: 24
           cache: pnpm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 25
+      - uses: gradle/actions/setup-gradle@v4
       - run: pnpm install --frozen-lockfile
+      - run: ./gradlew :core:bootJar
       - run: pnpm --filter @geomaster/web... build
-      - name: Start web and assert 200
+      - name: Start core (applies Flyway migrations) and wait for health UP
+        env:
+          DATABASE_URL: jdbc:postgresql://localhost:5432/geomaster
+          DATABASE_USER: geomaster
+          DATABASE_PASSWORD: geomaster
         run: |
           set -euo pipefail
-          pnpm --filter @geomaster/web exec next start -p 3000 &
-          SRV=$!
-          for i in $(seq 1 30); do
-            code=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:3000/en/signin || true)
-            [ "$code" = "200" ] && { echo "web up (200)"; kill $SRV; exit 0; }
+          nohup java -jar apps/core/build/libs/*.jar > core.log 2>&1 &
+          for i in $(seq 1 45); do
+            curl -fsS http://localhost:8080/actuator/health | grep -q '"status":"UP"' && { echo "core up"; exit 0; }
             sleep 2
           done
-          echo "web did not return 200 in time"; kill $SRV || true; exit 1
+          echo "core health not UP in time"; cat core.log; exit 1
+      - name: Start web and assert /en/signin returns 200
+        run: |
+          set -euo pipefail
+          export BETTER_AUTH_SECRET="$(openssl rand -base64 32)"
+          cd apps/web
+          nohup pnpm exec next start -p 3000 > "$WEB_LOG" 2>&1 &
+          for i in $(seq 1 30); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:3000/en/signin || true)
+            [ "$code" = "200" ] && { echo "web up (200)"; exit 0; }
+            sleep 2
+          done
+          echo "web did not return 200 in time"; cat "$WEB_LOG"; exit 1
+      - run: pnpm --filter @geomaster/web exec playwright install --with-deps chromium
+      - name: Playwright e2e
+        run: pnpm --filter @geomaster/web test:e2e
+      - name: Lighthouse CI (≥ 0.9 in all four categories, mobile and desktop)
+        run: pnpm --filter @geomaster/web lhci
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-smoke-debug
+          path: |
+            web.log
+            core.log
+            apps/web/test-results/
+            apps/web/.lighthouseci/
+          retention-days: 7
 
   core-smoke:
     runs-on: ubuntu-latest

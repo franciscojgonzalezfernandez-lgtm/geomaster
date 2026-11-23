@@ -6,7 +6,7 @@ import { useActionState, useState } from "react";
 import { Link } from "@/i18n/navigation";
 import { routing, type AppLocale } from "@/i18n/routing";
 
-import type { CreateProjectState } from "../actions";
+import type { CreateProjectState } from "@/lib/project-errors";
 
 type Props = {
   action: (prev: CreateProjectState, form: FormData) => Promise<CreateProjectState>;

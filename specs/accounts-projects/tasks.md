@@ -26,7 +26,7 @@ Ordered so the slice is demonstrable end-to-end as early as possible.
       the typed core client. (REQ-4; ADR-0017)
 - [x] T10 — Web UI: sign-in page, create-project form, project list; interface-language switcher
       persisting `interface_locale`; all strings in `packages/i18n` EN/DE/FR/ES. (REQ-15, REQ-16; NFR-08)
-- [ ] T11 — Web tests: Vitest (plan-limit helper, token shape), Playwright (sign-in → create →
+- [x] T11 — Web tests: Vitest (plan-limit helper, token shape), Playwright (sign-in → create →
       list), Lighthouse CI ≥ 0.9 on `/[locale]/signin`. (NFR-09; ADR-0013)
 - [ ] T12 — Account deletion endpoint + UI removing all data for the `account_id`. (REQ-18; NFR-06)
 - [x] T13 — Core smoke job: boot core against ephemeral pgvector Postgres, assert `/actuator/health`
