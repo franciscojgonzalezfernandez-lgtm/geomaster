@@ -317,6 +317,110 @@ paths:
       summary: "Edit a prompt; new text creates a new version, old answers keep theirs"
       tags:
       - prompts-controller
+  /v1/projects/{projectId}/scans:
+    get:
+      operationId: listScans
+      parameters:
+      - in: path
+        name: projectId
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ScanView"
+          description: Scans
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+          description: Missing or invalid service token
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+          description: No such project in this account
+      summary: "List the project's scans, newest first (up to 50)"
+      tags:
+      - scans-controller
+    post:
+      operationId: startScan
+      parameters:
+      - in: path
+        name: projectId
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScanView"
+          description: Scan queued
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+          description: Missing or invalid service token
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+          description: No such project in this account
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+          description: "Scan not started; `reason` is one of already_active, frequency,\
+            \ budget, project_inactive, no_prompts, no_engines"
+      summary: Start a scan of the project now (queued; the workers run it)
+      tags:
+      - scans-controller
+  /v1/scans/{scanId}:
+    get:
+      operationId: getScan
+      parameters:
+      - in: path
+        name: scanId
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScanView"
+          description: Scan
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+          description: Missing or invalid service token
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+          description: No such scan in this account
+      summary: A scan with its progress per engine and its cost
+      tags:
+      - scans-controller
   /v1/users/me:
     patch:
       operationId: update
@@ -412,6 +516,25 @@ components:
           type: string
         topic:
           type: string
+    EngineProgress:
+      type: object
+      properties:
+        cacheHits:
+          type: integer
+          format: int32
+        done:
+          type: integer
+          format: int32
+        engine:
+          type: string
+        failed:
+          type: integer
+          format: int32
+        model:
+          type: string
+        total:
+          type: integer
+          format: int32
     ProblemDetail:
       type: object
       properties:
@@ -480,6 +603,48 @@ components:
           $ref: "#/components/schemas/AccountResponse"
         user:
           $ref: "#/components/schemas/UserResponse"
+    ScanView:
+      type: object
+      properties:
+        costChf:
+          type: number
+        createdAt:
+          type: string
+          format: date-time
+        engines:
+          type: array
+          items:
+            $ref: "#/components/schemas/EngineProgress"
+        finishedAt:
+          type: string
+          format: date-time
+        id:
+          type: string
+          format: uuid
+        projectId:
+          type: string
+          format: uuid
+        samples:
+          type: integer
+          format: int32
+        startedAt:
+          type: string
+          format: date-time
+        status:
+          type: string
+        statusReason:
+          type: string
+        trigger:
+          type: string
+        unitsDone:
+          type: integer
+          format: int32
+        unitsFailed:
+          type: integer
+          format: int32
+        unitsTotal:
+          type: integer
+          format: int32
     UpdatePromptRequest:
       type: object
       properties:
