@@ -32,6 +32,7 @@ public final class UnitExecutor {
     public enum Outcome { DONE, CACHE_HIT, RETRY, FAILED, LOST_LEASE }
 
     private final ScanQueueRepository queue;
+    private final ScanFinalizer finalizer;
     private final LlmCallRepository calls;
     private final CostCalculator costs;
     private final ProvidersProperties providers;
@@ -43,9 +44,10 @@ public final class UnitExecutor {
      */
     private final ConcurrentHashMap<String, ReentrantLock> inFlight = new ConcurrentHashMap<>();
 
-    public UnitExecutor(ScanQueueRepository queue, LlmCallRepository calls, CostCalculator costs,
-                        ProvidersProperties providers, ScanWorkerProperties props, Clock clock) {
+    public UnitExecutor(ScanQueueRepository queue, ScanFinalizer finalizer, LlmCallRepository calls,
+                        CostCalculator costs, ProvidersProperties providers, ScanWorkerProperties props, Clock clock) {
         this.queue = queue;
+        this.finalizer = finalizer;
         this.calls = calls;
         this.costs = costs;
         this.providers = providers;
@@ -54,6 +56,15 @@ public final class UnitExecutor {
     }
 
     public Outcome run(ClaimedUnit u, ProviderAdapter adapter) {
+        Outcome outcome = runDeduplicated(u, adapter);
+        if (outcome == Outcome.DONE || outcome == Outcome.CACHE_HIT || outcome == Outcome.FAILED) {
+            // The unit's result is committed; the last unit of a scan closes it (REQ-15).
+            finalizer.finalizeIfDone(u.scanId(), u.accountId());
+        }
+        return outcome;
+    }
+
+    private Outcome runDeduplicated(ClaimedUnit u, ProviderAdapter adapter) {
         ProvidersProperties.EngineProperties engine = providers.engine(u.engine());
         String key = CacheKey.of(u.promptText(), u.engine(), engine.model(), u.locale(), u.country(), u.region(),
                 LocalDate.ofInstant(clock.instant(), ZoneOffset.UTC));

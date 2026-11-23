@@ -46,6 +46,10 @@ POST /v1/projects/{id}/scans ─┐          weekly scheduler ─┐
   (`locked_until`); expired leases are reclaimable (worker crash). Backoff: 30 s × 2^attempt, max 3 attempts.
 - `ScanFinalizer`: when no unit is pending/running → status + totals.
 - `BudgetGuard` interface (`allowScan(account, plan) → Decision`); default implementation allows all.
+- `ScanPlanner` refusals are typed (`ScanRefusedException.Reason`: `ALREADY_ACTIVE`, `FREQUENCY`, `BUDGET`,
+  `PROJECT_INACTIVE`, `NO_PROMPTS`, `NO_ENGINES`); the scans API (T6) maps them to HTTP. Failed scans do not
+  count against the plan's frequency. Engines = the plan's first N in priority order that are enabled in
+  config; languages = the project's, capped by the plan in canonical order (en, de, fr, es).
 - `WeeklyScanScheduler`: `@Scheduled` hourly; starts scans for projects whose last scan is ≥ 7 days old
   and whose plan is `weekly`; guarded by a Postgres advisory lock so only one instance schedules.
 - REST: `POST/GET /v1/projects/{id}/prompts`, `PATCH/DELETE /v1/projects/{id}/prompts/{promptId}`,

@@ -126,7 +126,7 @@ class ScanQueueTest {
     }
 
     @Test
-    void successStoresCallCitationsAndCostAndMarksScanRunning() {
+    void successStoresCallCitationsAndCostAndClosesTheScan() {
         Fixture f = fixture("Beste Snowboardschule Flumserberg?");
         unit(f, Engine.OPENAI, 1);
         drainUntilIdle();
@@ -145,7 +145,7 @@ class ScanQueueTest {
         assertEquals(1L, ((Number) row.get("citations")).longValue());
         assertEquals("test", row.get("price_version"));
         assertTrue(((java.math.BigDecimal) row.get("cost_chf")).signum() > 0, "real cost recorded (FR-SCN-06)");
-        assertEquals("running", row.get("status"));
+        assertEquals("completed", row.get("status"), "last unit closes the scan (REQ-15)");
         assertEquals(1, ((Number) row.get("units_done")).intValue());
         assertEquals(0, ((java.math.BigDecimal) row.get("scan_cost")).compareTo((java.math.BigDecimal) row.get("cost_chf")));
     }
