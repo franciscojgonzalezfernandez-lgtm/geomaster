@@ -100,6 +100,11 @@ public final class Plans {
         return Optional.ofNullable(byId.get(planId));
     }
 
+    /** Ids of the plans with this scan frequency ({@code once} or {@code weekly}), in file order. */
+    public List<String> idsWithScanFrequency(String frequency) {
+        return byId.values().stream().filter(p -> frequency.equals(p.scanFrequency())).map(Plan::id).toList();
+    }
+
     /** The plan for {@code planId}; an unknown id is a configuration error, not a user error. */
     public Plan get(String planId) {
         return find(planId).orElseThrow(() -> new IllegalStateException("Unknown plan id: " + planId));
