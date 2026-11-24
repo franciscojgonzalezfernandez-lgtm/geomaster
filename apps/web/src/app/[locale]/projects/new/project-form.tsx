@@ -24,6 +24,7 @@ export function ProjectForm({ action, maxLanguages, defaultLanguage, countries }
   const tLang = useTranslations("Languages");
   const [state, formAction, pending] = useActionState(action, {});
   const [languages, setLanguages] = useState<string[]>(state.values?.languages ?? [defaultLanguage]);
+  const single = maxLanguages <= 1;
   const errorFor = (...keys: string[]) => (state.error && keys.includes(state.error) ? state.error : null);
   const message = state.error
     ? t(`errors.${state.error}`, { allowed: state.allowed ?? maxLanguages })
@@ -71,13 +72,14 @@ export function ProjectForm({ action, maxLanguages, defaultLanguage, countries }
             const checked = languages.includes(l);
             return (
               <label key={l} className="flex items-center gap-2">
+                {/* One language allowed: a radio group, so picking another moves the choice. */}
                 <input
-                  type="checkbox"
+                  type={single ? "radio" : "checkbox"}
                   name="languages"
                   value={l}
                   checked={checked}
-                  disabled={!checked && languages.length >= maxLanguages}
-                  onChange={(e) => toggle(l, e.target.checked)}
+                  disabled={!single && !checked && languages.length >= maxLanguages}
+                  onChange={(e) => (single ? setLanguages([l]) : toggle(l, e.target.checked))}
                   className="size-4"
                 />
                 {tLang(l)}

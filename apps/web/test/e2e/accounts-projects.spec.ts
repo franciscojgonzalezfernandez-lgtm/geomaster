@@ -26,6 +26,11 @@ test("sign in → create project → list (EN)", async ({ page }) => {
   await expect(page.getByText("0 of 1 domains on the Free plan")).toBeVisible();
 
   await page.getByRole("link", { name: "New project" }).click();
+  // Free measures one language: a radio group, so picking another moves the choice.
+  await expect(page.getByRole("radio", { name: "English" })).toBeChecked();
+  await page.getByRole("radio", { name: "German" }).check();
+  await expect(page.getByRole("radio", { name: "English" })).not.toBeChecked();
+  await page.getByRole("radio", { name: "English" }).check();
   await page.getByLabel("Domain").fill("https://www.Example-E2E.ch/path");
   await page.getByLabel("Region or city (optional)").fill("Zürich");
   await page.getByRole("button", { name: "Create project" }).click();

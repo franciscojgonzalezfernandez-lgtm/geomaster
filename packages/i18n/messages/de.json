@@ -49,7 +49,7 @@
     "domain": "Domain",
     "domainHint": "Zum Beispiel beispiel.ch. Ohne https://.",
     "languages": "Messsprachen",
-    "languagesHint": "Ihr Plan umfasst bis zu {max, plural, one {# Sprache} other {# Sprachen}}.",
+    "languagesHint": "{max, plural, one {Ihr Plan misst eine Sprache. Wählen Sie sie hier; mit einem höheren Plan messen Sie mehr.} other {Wählen Sie bis zu # Sprachen.}}",
     "country": "Land",
     "countryPlaceholder": "Land wählen",
     "region": "Region oder Ort (optional)",
