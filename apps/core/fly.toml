@@ -2,8 +2,7 @@
 #   fly deploy --config apps/core/fly.toml
 # Secrets (fly secrets set): DATABASE_URL (jdbc:postgresql://…?sslmode=require), DATABASE_USER,
 # DATABASE_PASSWORD, WEB_JWKS_URI, SERVICE_TOKEN_ISSUER, SERVICE_TOKEN_AUDIENCE, OPENAI_API_KEY,
-# OPENAI_ENABLED. Tracing (ADR-0012): OTEL_EXPORTER_OTLP_HEADERS = "Authorization=Basic <base64 of
-# langfuse public key:secret key>"; then set OTEL_SDK_DISABLED=false below.
+# OPENAI_ENABLED, OTEL_EXPORTER_OTLP_HEADERS (Langfuse auth; scripts/set-langfuse-secret.sh).
 app = "geomaster-core"
 primary_region = "fra"
 
@@ -12,8 +11,8 @@ primary_region = "fra"
 
 [env]
   JAVA_TOOL_OPTIONS = "-XX:+UseSerialGC -Xss512k"
-  # OpenTelemetry agent → Langfuse EU over OTLP (scan-engine T11). Off until the Langfuse key is set.
-  OTEL_SDK_DISABLED = "true"
+  # OpenTelemetry agent → Langfuse EU over OTLP (scan-engine T11). Auth: OTEL_EXPORTER_OTLP_HEADERS secret, set with scripts/set-langfuse-secret.sh.
+  OTEL_SDK_DISABLED = "false"
   OTEL_SERVICE_NAME = "geomaster-core"
   OTEL_TRACES_EXPORTER = "otlp"
   OTEL_METRICS_EXPORTER = "none"
