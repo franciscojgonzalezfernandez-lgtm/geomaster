@@ -16,7 +16,7 @@ recorded fixtures).
 - [x] T7 — 🔑 `OpenAiAdapter` (Responses API + `web_search`, user location, max searches). (REQ-7, REQ-12)
 - [ ] T8 — 🔑 `GeminiAdapter` (Google Search grounding, search entry point stored). (REQ-7, REQ-12, REQ-13)
 - [ ] T9 — 🔑 `ClaudeAdapter` (web search tool, `max_uses`, user location). (REQ-7, REQ-12)
-- [ ] T10 — Weekly scheduler with advisory lock. (REQ-5)
+- [x] T10 — Weekly scheduler with advisory lock. (REQ-5)
 - [ ] T11 — OpenTelemetry spans per scan and per call; Langfuse export config. (NFR-10; ADR-0012)
 - [ ] T12 — `providerSmoke` gradle task: one real prompt per engine, prints answer/citations/cost. 🔑
 - [x] T13 — Web project page: prompts list/add/delete by topic, "Scan now" with localized refusals, scan
