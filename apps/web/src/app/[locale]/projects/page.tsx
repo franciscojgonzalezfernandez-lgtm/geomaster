@@ -68,7 +68,11 @@ async function ProjectList() {
           {projects.data.map((p: Project) => (
             <li key={p.id} className="rounded-lg border border-neutral-200 p-4 dark:border-neutral-800">
               <div className="flex flex-wrap items-baseline justify-between gap-2">
-                <h2 className="text-lg font-medium">{p.domain}</h2>
+                <h2 className="text-lg font-medium">
+                  <Link href={`/projects/${p.id}`} className="underline-offset-4 hover:underline">
+                    {p.domain}
+                  </Link>
+                </h2>
                 <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-xs dark:bg-neutral-800">
                   {t(`status.${(p.status ?? "active") as Status}`)}
                 </span>

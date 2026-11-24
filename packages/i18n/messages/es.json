@@ -67,6 +67,65 @@
       "generic": "No se pudo crear el proyecto. Inténtalo de nuevo en un momento."
     }
   },
+  "Project": {
+    "back": "← Todos los proyectos",
+    "loading": "Cargando proyecto…",
+    "loadError": "No se pudo cargar el proyecto. Inténtalo de nuevo en un momento.",
+    "notFound": "Proyecto no encontrado",
+    "scansTitle": "Escaneos",
+    "scansEmpty": "Aún no hay escaneos. Añade prompts y lanza tu primer escaneo.",
+    "scanNow": "Escanear ahora",
+    "scanStarting": "Iniciando…",
+    "scanProgress": "{done} de {total} respuestas{failed, plural, =0 {} one { · # fallida} other { · # fallidas}}",
+    "engineProgress": "{done} / {total}{failed, plural, =0 {} one { · # fallida} other { · # fallidas}}",
+    "engineProgressLabel": "Progreso de {engine}",
+    "scanStatus": {
+      "queued": "En cola",
+      "running": "En curso",
+      "completed": "Completado",
+      "partial": "Completado en parte",
+      "failed": "Fallido"
+    },
+    "refusals": {
+      "already_active": "Ya hay un escaneo en curso para este proyecto.",
+      "frequency": "Tu plan aún no permite otro escaneo.",
+      "budget": "Los escaneos están en pausa por ahora. Inténtalo más tarde.",
+      "project_inactive": "Este proyecto está en pausa o archivado.",
+      "no_prompts": "Añade al menos un prompt antes de escanear.",
+      "no_engines": "Ahora mismo no hay ningún motor de IA disponible para tu plan.",
+      "generic": "No se pudo iniciar el escaneo. Inténtalo de nuevo en un momento."
+    },
+    "promptsTitle": "Prompts",
+    "promptsEmpty": "Aún no hay prompts. Añade las preguntas que tus clientes hacen a un asistente de IA.",
+    "promptsUsage": "{used} de {allowed} prompts en tu plan",
+    "promptText": "Prompt",
+    "promptLanguage": "Idioma",
+    "promptTopic": "Tema",
+    "promptAdd": "Añadir prompt",
+    "promptAdding": "Añadiendo…",
+    "promptDelete": "Eliminar",
+    "promptDeleteLabel": "Eliminar prompt: {text}",
+    "promptErrors": {
+      "text": "Escribe un prompt de hasta 2.000 caracteres.",
+      "locale": "Elige uno de los idiomas del proyecto.",
+      "topic": "Elige un tema.",
+      "promptsLimit": "Tu plan permite {allowed, plural, one {# prompt} other {# prompts}}. Elimina uno o mejora tu plan para añadir más.",
+      "generic": "No se pudo añadir el prompt. Inténtalo de nuevo en un momento."
+    },
+    "topics": {
+      "reviews": "Reseñas y opiniones",
+      "pricing": "Precio y planes",
+      "use_cases": "Casos de uso",
+      "alternatives": "Alternativas",
+      "how_to": "Cómo hacer / guía",
+      "comparison": "Comparación"
+    }
+  },
+  "Engines": {
+    "openai": "ChatGPT",
+    "gemini": "Gemini",
+    "claude": "Claude"
+  },
   "Languages": {
     "en": "Inglés",
     "de": "Alemán",

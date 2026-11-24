@@ -1,4 +1,5 @@
 import { getTranslations } from "next-intl/server";
+import { Suspense } from "react";
 
 import { Link } from "@/i18n/navigation";
 
@@ -21,7 +22,10 @@ export async function AppHeader() {
           <Link href="/projects" className="text-sm underline-offset-4 hover:underline">
             {t("projects")}
           </Link>
-          <LocaleSwitcher />
+          {/* usePathname() is runtime data on dynamic routes such as /projects/[id]. */}
+          <Suspense fallback={<span className="w-24" aria-hidden />}>
+            <LocaleSwitcher />
+          </Suspense>
           <SignOutButton />
         </div>
       </nav>

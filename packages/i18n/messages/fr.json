@@ -67,6 +67,65 @@
       "generic": "Le projet n’a pas pu être créé. Réessayez dans un instant."
     }
   },
+  "Project": {
+    "back": "← Tous les projets",
+    "loading": "Chargement du projet…",
+    "loadError": "Le projet n'a pas pu être chargé. Réessayez dans un instant.",
+    "notFound": "Projet introuvable",
+    "scansTitle": "Analyses",
+    "scansEmpty": "Aucune analyse pour l'instant. Ajoutez des prompts, puis lancez votre première analyse.",
+    "scanNow": "Analyser maintenant",
+    "scanStarting": "Démarrage…",
+    "scanProgress": "{done} sur {total} réponses{failed, plural, =0 {} one { · # en échec} other { · # en échec}}",
+    "engineProgress": "{done} / {total}{failed, plural, =0 {} other { · # en échec}}",
+    "engineProgressLabel": "Progression {engine}",
+    "scanStatus": {
+      "queued": "En attente",
+      "running": "En cours",
+      "completed": "Terminée",
+      "partial": "Partiellement terminée",
+      "failed": "Échouée"
+    },
+    "refusals": {
+      "already_active": "Une analyse est déjà en cours pour ce projet.",
+      "frequency": "Votre offre ne permet pas encore une nouvelle analyse.",
+      "budget": "Les analyses sont suspendues pour le moment. Réessayez plus tard.",
+      "project_inactive": "Ce projet est en pause ou archivé.",
+      "no_prompts": "Ajoutez au moins un prompt avant de lancer l'analyse.",
+      "no_engines": "Aucun moteur d'IA n'est disponible pour votre offre en ce moment.",
+      "generic": "L'analyse n'a pas pu être lancée. Réessayez dans un instant."
+    },
+    "promptsTitle": "Prompts",
+    "promptsEmpty": "Aucun prompt pour l'instant. Ajoutez les questions que vos clients posent à un assistant IA.",
+    "promptsUsage": "{used} sur {allowed} prompts dans votre offre",
+    "promptText": "Prompt",
+    "promptLanguage": "Langue",
+    "promptTopic": "Thème",
+    "promptAdd": "Ajouter le prompt",
+    "promptAdding": "Ajout…",
+    "promptDelete": "Supprimer",
+    "promptDeleteLabel": "Supprimer le prompt : {text}",
+    "promptErrors": {
+      "text": "Rédigez un prompt de 2 000 caractères maximum.",
+      "locale": "Choisissez l'une des langues du projet.",
+      "topic": "Choisissez un thème.",
+      "promptsLimit": "Votre offre permet {allowed, plural, one {# prompt} other {# prompts}}. Supprimez-en un ou changez d'offre.",
+      "generic": "Le prompt n'a pas pu être ajouté. Réessayez dans un instant."
+    },
+    "topics": {
+      "reviews": "Avis et opinions",
+      "pricing": "Prix et offres",
+      "use_cases": "Cas d'usage",
+      "alternatives": "Alternatives",
+      "how_to": "Guides pratiques",
+      "comparison": "Comparaison"
+    }
+  },
+  "Engines": {
+    "openai": "ChatGPT",
+    "gemini": "Gemini",
+    "claude": "Claude"
+  },
   "Languages": {
     "en": "Anglais",
     "de": "Allemand",
