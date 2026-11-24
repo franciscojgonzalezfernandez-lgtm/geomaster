@@ -1,5 +1,6 @@
 package com.geomaster.core.scan;
 
+import com.geomaster.core.observability.ScanTelemetry;
 import com.geomaster.core.providers.CostCalculator;
 import com.geomaster.core.providers.ProviderAdapter;
 import com.geomaster.core.providers.ProvidersProperties;
@@ -17,8 +18,9 @@ public class ScanWorkerConfig {
 
     @Bean
     UnitExecutor unitExecutor(ScanQueueRepository queue, ScanFinalizer finalizer, LlmCallRepository calls,
-                              CostCalculator costs, ProvidersProperties providers, ScanWorkerProperties props) {
-        return new UnitExecutor(queue, finalizer, calls, costs, providers, props, Clock.systemUTC());
+                              CostCalculator costs, ProvidersProperties providers, ScanWorkerProperties props,
+                              ScanTelemetry telemetry) {
+        return new UnitExecutor(queue, finalizer, calls, costs, providers, props, Clock.systemUTC(), telemetry);
     }
 
     @Bean

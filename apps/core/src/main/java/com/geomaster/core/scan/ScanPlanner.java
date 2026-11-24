@@ -2,6 +2,9 @@ package com.geomaster.core.scan;
 
 import com.geomaster.core.api.NotFoundException;
 import com.geomaster.core.budget.BudgetGuard;
+import com.geomaster.core.observability.ScanTelemetry;
+import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.api.trace.StatusCode;
 import com.geomaster.core.plans.Plan;
 import com.geomaster.core.plans.Plans;
 import com.geomaster.core.providers.Engine;
@@ -43,13 +46,16 @@ public class ScanPlanner {
     private final Plans plans;
     private final ProvidersProperties providers;
     private final BudgetGuard budget;
+    private final ScanTelemetry telemetry;
     private final JsonMapper json = JsonMapper.builder().build();
 
-    public ScanPlanner(JdbcClient db, Plans plans, ProvidersProperties providers, BudgetGuard budget) {
+    public ScanPlanner(JdbcClient db, Plans plans, ProvidersProperties providers, BudgetGuard budget,
+                       ScanTelemetry telemetry) {
         this.db = db;
         this.plans = plans;
         this.providers = providers;
         this.budget = budget;
+        this.telemetry = telemetry;
     }
 
     /**
@@ -60,6 +66,24 @@ public class ScanPlanner {
      */
     @Transactional
     public ScanPlan start(UUID accountId, UUID projectId, Trigger trigger) {
+        Span span = telemetry.startPlan(accountId, projectId, trigger.name().toLowerCase());
+        try {
+            ScanPlan plan = plan(accountId, projectId, trigger);
+            telemetry.planned(span, plan.scanId(), plan.units(), plan.samples());
+            return plan;
+        } catch (ScanRefusedException e) {
+            span.setAttribute("geomaster.scan.refused", e.reason().name().toLowerCase());
+            throw e;
+        } catch (RuntimeException e) {
+            span.recordException(e);
+            span.setStatus(StatusCode.ERROR);
+            throw e;
+        } finally {
+            span.end();
+        }
+    }
+
+    private ScanPlan plan(UUID accountId, UUID projectId, Trigger trigger) {
         String planId = db.sql("SELECT plan_id FROM account WHERE id = :a FOR UPDATE")
                 .param("a", accountId).query(String.class).optional()
                 .orElseThrow(() -> new NotFoundException("account"));

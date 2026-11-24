@@ -18,6 +18,10 @@ repositories {
 	mavenCentral()
 }
 
+// OpenTelemetry Java agent (ADR-0012), resolved from Maven Central like any dependency and copied
+// next to the boot jar; the Docker image runs core with -javaagent.
+val otelAgent: Configuration by configurations.creating { isTransitive = false }
+
 dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-actuator")
 	implementation("org.springframework.boot:spring-boot-starter-flyway")
@@ -33,6 +37,9 @@ dependencies {
 	}
 	implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:3.1.1")
 	implementation("org.flywaydb:flyway-database-postgresql")
+	// Custom spans per scan and per LLM call (T11); the agent supplies the SDK at runtime.
+	implementation("io.opentelemetry:opentelemetry-api")
+	otelAgent("io.opentelemetry.javaagent:opentelemetry-javaagent:2.34.0")
 	runtimeOnly("org.postgresql:postgresql")
 	testImplementation("org.springframework.boot:spring-boot-starter-actuator-test")
 	testImplementation("org.springframework.boot:spring-boot-starter-flyway-test")
@@ -42,6 +49,7 @@ dependencies {
 	testImplementation("org.springframework.boot:spring-boot-testcontainers")
 	testImplementation("org.testcontainers:testcontainers-junit-jupiter")
 	testImplementation("org.testcontainers:testcontainers-postgresql")
+	testImplementation("io.opentelemetry:opentelemetry-sdk-testing")
 	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
@@ -68,4 +76,15 @@ tasks.register<Test>("updateApiContract") {
 	filter { includeTestsMatching("com.geomaster.core.api.OpenApiContractTest") }
 	systemProperty("updateApiContract", "true")
 	outputs.upToDateWhen { false }
+}
+
+val copyOtelAgent by tasks.registering(Copy::class) {
+	description = "Copies the OpenTelemetry Java agent to build/otel/opentelemetry-javaagent.jar."
+	from(otelAgent)
+	into(layout.buildDirectory.dir("otel"))
+	rename { "opentelemetry-javaagent.jar" }
+}
+
+tasks.bootJar {
+	finalizedBy(copyOtelAgent)
 }

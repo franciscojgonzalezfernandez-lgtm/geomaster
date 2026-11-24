@@ -9,6 +9,8 @@ import com.geomaster.core.providers.ProviderAdapter;
 import com.geomaster.core.providers.ProviderAnswer;
 import com.geomaster.core.providers.ProviderException;
 import com.geomaster.core.providers.ProvidersProperties;
+import com.geomaster.core.observability.ScanTelemetry;
+import io.opentelemetry.api.trace.Span;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,6 +40,7 @@ public final class UnitExecutor {
     private final ProvidersProperties providers;
     private final ScanWorkerProperties props;
     private final Clock clock;
+    private final ScanTelemetry telemetry;
     /**
      * Single-flight per cache key in this instance: units with the same question (other accounts,
      * other samples' siblings) wait for the first call instead of paying for a duplicate (FR-SCN-04).
@@ -45,7 +48,8 @@ public final class UnitExecutor {
     private final ConcurrentHashMap<String, ReentrantLock> inFlight = new ConcurrentHashMap<>();
 
     public UnitExecutor(ScanQueueRepository queue, ScanFinalizer finalizer, LlmCallRepository calls,
-                        CostCalculator costs, ProvidersProperties providers, ScanWorkerProperties props, Clock clock) {
+                        CostCalculator costs, ProvidersProperties providers, ScanWorkerProperties props, Clock clock,
+                        ScanTelemetry telemetry) {
         this.queue = queue;
         this.finalizer = finalizer;
         this.calls = calls;
@@ -53,15 +57,19 @@ public final class UnitExecutor {
         this.providers = providers;
         this.props = props;
         this.clock = clock;
+        this.telemetry = telemetry;
     }
 
     public Outcome run(ClaimedUnit u, ProviderAdapter adapter) {
-        Outcome outcome = runDeduplicated(u, adapter);
-        if (outcome == Outcome.DONE || outcome == Outcome.CACHE_HIT || outcome == Outcome.FAILED) {
-            // The unit's result is committed; the last unit of a scan closes it (REQ-15).
-            finalizer.finalizeIfDone(u.scanId(), u.accountId());
-        }
-        return outcome;
+        return telemetry.unit(u.scanId(), u.accountId(), u.id(), u.engine().id(), u.locale(), u.attempt(), () -> {
+            Outcome outcome = runDeduplicated(u, adapter);
+            if (outcome == Outcome.DONE || outcome == Outcome.CACHE_HIT || outcome == Outcome.FAILED) {
+                // The unit's result is committed; the last unit of a scan closes it (REQ-15).
+                finalizer.finalizeIfDone(u.scanId(), u.accountId())
+                        .ifPresent(status -> telemetry.finished(u.scanId(), u.accountId(), status));
+            }
+            return outcome;
+        });
     }
 
     private Outcome runDeduplicated(ClaimedUnit u, ProviderAdapter adapter) {
@@ -86,21 +94,27 @@ public final class UnitExecutor {
                               String key) {
         Optional<UUID> cached = calls.findByCacheKey(key);
         if (cached.isPresent()) {
+            telemetry.cacheHit();
             return queue.markDone(u, cached.get(), true, BigDecimal.ZERO) ? Outcome.CACHE_HIT : Outcome.LOST_LEASE;
         }
 
         ProviderAnswer answer;
+        Span call = telemetry.startCall(u.engine().id(), engine.model(), u.promptText());
         try {
             answer = adapter.answerWithSearch(new AnswerRequest(
                     u.promptText(), u.locale(), u.country(), u.region(), engine.maxSearches()));
         } catch (ProviderException e) {
+            telemetry.callFailed(call, e);
             return failed(u, e.getMessage(), e.retryable());
         } catch (RuntimeException e) {
+            telemetry.callFailed(call, e);
             log.warn("Unexpected error from {} on unit {}: {}", u.engine().id(), u.id(), e.toString());
             return failed(u, e.toString(), true);
         }
 
         CostCalculator.Cost cost = costs.cost(u.engine(), answer);
+        telemetry.callSucceeded(call, answer.model(), answer.usage().inputTokens(), answer.usage().outputTokens(),
+                answer.searchCount(), cost.chf(), cost.priceVersion(), answer.text());
         UUID callId = calls.insert(key, u.engine(), u.locale(), u.country(), u.region(), u.promptText(),
                 answer, cost.chf(), cost.priceVersion());
         return queue.markDone(u, callId, false, cost.chf()) ? Outcome.DONE : Outcome.LOST_LEASE;

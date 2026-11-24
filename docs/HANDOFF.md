@@ -41,6 +41,7 @@ Context that is not fully captured in the PRD or the ADRs. Read after `docs/PRD.
 
 ## Open items
 
+- [ ] Langfuse (ADR-0012, scan-engine T11): create an EU project, then `fly secrets set OTEL_EXPORTER_OTLP_HEADERS="Authorization=Basic <base64 public:secret>"` and set `OTEL_SDK_DISABLED = "false"` in `apps/core/fly.toml`. Spans: `scan.plan`, `scan.unit`, `chat <model>`, `scan.finalize`; session = scan id; prompt/answer text only with `geomaster.telemetry.capture-content=true`.
 - [ ] Resend: verify a sending domain for geo-masterizer.com (magic links in production). Deferred by the owner.
 - [ ] Custom domain geo-masterizer.com on Vercel; then update `BETTER_AUTH_URL`, `SITE_URL`, core `WEB_JWKS_URI` / `SERVICE_TOKEN_*`.
 - [ ] Vercel preview env vars (previews currently have no DB/auth config).
