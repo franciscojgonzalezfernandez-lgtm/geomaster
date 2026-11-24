@@ -49,7 +49,7 @@
     "domain": "Domain",
     "domainHint": "For example example.ch. No https:// needed.",
     "languages": "Measurement languages",
-    "languagesHint": "Your plan includes up to {max, plural, one {# language} other {# languages}}.",
+    "languagesHint": "{max, plural, one {Your plan measures one language. Pick it here; upgrade to measure more.} other {Pick up to # languages.}}",
     "country": "Country",
     "countryPlaceholder": "Choose a country",
     "region": "Region or city (optional)",
