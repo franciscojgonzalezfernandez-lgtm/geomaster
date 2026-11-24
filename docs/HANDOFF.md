@@ -36,12 +36,12 @@ Context that is not fully captured in the PRD or the ADRs. Read after `docs/PRD.
 
 - Secrets live only in Vercel env (production) and `fly secrets`; names are listed in `apps/core/fly.toml`. Never in the repo.
 - Google OAuth client (project `geomaster-515216`) has redirect URIs for localhost:3000, geo-masterizer.com and geomaster-coral.vercel.app.
+- Traces go to Langfuse EU (project in the owner's Langfuse org; AI features off). Spans: `scan.plan`, `scan.unit`, `chat <model>`, `scan.finalize`; session = scan id; no prompt/answer text unless `geomaster.telemetry.capture-content=true`. Key rotation: `scripts/set-langfuse-secret.sh`, then redeploy.
 - Core runs with `OPENAI_ENABLED=true` in production; Gemini and Claude adapters are not built yet (scan-engine T8, T9).
 - Auto-merge (ADR-0019) enables merges with `AUTO_MERGE_TOKEN` (fine-grained PAT, this repo only, Contents + Pull requests read/write, expires 2027-11-24), so merges trigger `push` workflows on `main` (deploy-core, CI). Renew the token before it expires; without it, merges fall back to `GITHUB_TOKEN` and `gh workflow run deploy-core.yml` is needed by hand.
 
 ## Open items
 
-- [ ] Langfuse (ADR-0012, scan-engine T11): create an EU project, then `fly secrets set OTEL_EXPORTER_OTLP_HEADERS="Authorization=Basic <base64 public:secret>"` and set `OTEL_SDK_DISABLED = "false"` in `apps/core/fly.toml`. Spans: `scan.plan`, `scan.unit`, `chat <model>`, `scan.finalize`; session = scan id; prompt/answer text only with `geomaster.telemetry.capture-content=true`.
 - [ ] Resend: verify a sending domain for geo-masterizer.com (magic links in production). Deferred by the owner.
 - [ ] Custom domain geo-masterizer.com on Vercel; then update `BETTER_AUTH_URL`, `SITE_URL`, core `WEB_JWKS_URI` / `SERVICE_TOKEN_*`.
 - [ ] Vercel preview env vars (previews currently have no DB/auth config).
