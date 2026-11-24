@@ -10,7 +10,7 @@ const keys = (tree: Tree, prefix = ""): string[] =>
   Object.entries(tree).flatMap(([k, v]) => (typeof v === "string" ? [prefix + k] : keys(v, `${prefix}${k}.`)));
 
 // Sample values for every ICU argument used in the messages.
-const ARGS = { count: 2, used: 1, allowed: 2, max: 1, plan: "Pro", email: "a@b.ch", date: "1.1.2027" };
+const ARGS = { count: 2, used: 1, allowed: 2, max: 1, plan: "Pro", email: "a@b.ch", date: "1.1.2027", done: 3, total: 12, failed: 1, engine: "ChatGPT", text: "Best school?" };
 
 describe("UI strings (NFR-08: EN, DE, FR, ES)", () => {
   it("has identical keys in every locale", async () => {

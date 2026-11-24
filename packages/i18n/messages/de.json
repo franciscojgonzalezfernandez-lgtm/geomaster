@@ -67,6 +67,65 @@
       "generic": "Das Projekt konnte nicht erstellt werden. Versuchen Sie es gleich noch einmal."
     }
   },
+  "Project": {
+    "back": "← Alle Projekte",
+    "loading": "Projekt wird geladen…",
+    "loadError": "Das Projekt konnte nicht geladen werden. Versuchen Sie es gleich noch einmal.",
+    "notFound": "Projekt nicht gefunden",
+    "scansTitle": "Scans",
+    "scansEmpty": "Noch keine Scans. Fügen Sie Prompts hinzu und starten Sie dann Ihren ersten Scan.",
+    "scanNow": "Jetzt scannen",
+    "scanStarting": "Wird gestartet…",
+    "scanProgress": "{done} von {total} Antworten{failed, plural, =0 {} other { · # fehlgeschlagen}}",
+    "engineProgress": "{done} / {total}{failed, plural, =0 {} other { · # fehlgeschlagen}}",
+    "engineProgressLabel": "Fortschritt {engine}",
+    "scanStatus": {
+      "queued": "In der Warteschlange",
+      "running": "Läuft",
+      "completed": "Abgeschlossen",
+      "partial": "Teilweise abgeschlossen",
+      "failed": "Fehlgeschlagen"
+    },
+    "refusals": {
+      "already_active": "Für dieses Projekt läuft bereits ein Scan.",
+      "frequency": "Ihr Plan erlaubt noch keinen weiteren Scan.",
+      "budget": "Scans sind vorübergehend pausiert. Versuchen Sie es später erneut.",
+      "project_inactive": "Dieses Projekt ist pausiert oder archiviert.",
+      "no_prompts": "Fügen Sie vor dem Scan mindestens einen Prompt hinzu.",
+      "no_engines": "Für Ihren Plan ist derzeit keine KI-Engine verfügbar.",
+      "generic": "Der Scan konnte nicht gestartet werden. Versuchen Sie es gleich noch einmal."
+    },
+    "promptsTitle": "Prompts",
+    "promptsEmpty": "Noch keine Prompts. Fügen Sie die Fragen hinzu, die Ihre Kunden einem KI-Assistenten stellen.",
+    "promptsUsage": "{used} von {allowed} Prompts in Ihrem Plan",
+    "promptText": "Prompt",
+    "promptLanguage": "Sprache",
+    "promptTopic": "Thema",
+    "promptAdd": "Prompt hinzufügen",
+    "promptAdding": "Wird hinzugefügt…",
+    "promptDelete": "Löschen",
+    "promptDeleteLabel": "Prompt löschen: {text}",
+    "promptErrors": {
+      "text": "Schreiben Sie einen Prompt mit höchstens 2.000 Zeichen.",
+      "locale": "Wählen Sie eine der Projektsprachen.",
+      "topic": "Wählen Sie ein Thema.",
+      "promptsLimit": "Ihr Plan erlaubt {allowed, plural, one {# Prompt} other {# Prompts}}. Löschen Sie einen oder wechseln Sie den Plan.",
+      "generic": "Der Prompt konnte nicht hinzugefügt werden. Versuchen Sie es gleich noch einmal."
+    },
+    "topics": {
+      "reviews": "Bewertungen und Meinungen",
+      "pricing": "Preise und Pläne",
+      "use_cases": "Anwendungsfälle",
+      "alternatives": "Alternativen",
+      "how_to": "Anleitungen",
+      "comparison": "Vergleich"
+    }
+  },
+  "Engines": {
+    "openai": "ChatGPT",
+    "gemini": "Gemini",
+    "claude": "Claude"
+  },
   "Languages": {
     "en": "Englisch",
     "de": "Deutsch",

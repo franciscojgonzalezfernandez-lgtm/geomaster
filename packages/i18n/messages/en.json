@@ -67,6 +67,65 @@
       "generic": "The project could not be created. Try again in a moment."
     }
   },
+  "Project": {
+    "back": "← All projects",
+    "loading": "Loading project…",
+    "loadError": "The project could not be loaded. Try again in a moment.",
+    "notFound": "Project not found",
+    "scansTitle": "Scans",
+    "scansEmpty": "No scans yet. Add prompts, then start your first scan.",
+    "scanNow": "Scan now",
+    "scanStarting": "Starting…",
+    "scanProgress": "{done} of {total} answers{failed, plural, =0 {} one { · # failed} other { · # failed}}",
+    "engineProgress": "{done} / {total}{failed, plural, =0 {} other { · # failed}}",
+    "engineProgressLabel": "{engine} progress",
+    "scanStatus": {
+      "queued": "Queued",
+      "running": "Running",
+      "completed": "Completed",
+      "partial": "Partially completed",
+      "failed": "Failed"
+    },
+    "refusals": {
+      "already_active": "A scan is already running for this project.",
+      "frequency": "Your plan does not allow another scan yet.",
+      "budget": "Scans are paused for now. Try again later.",
+      "project_inactive": "This project is paused or archived.",
+      "no_prompts": "Add at least one prompt before scanning.",
+      "no_engines": "No AI engine is available for your plan right now.",
+      "generic": "The scan could not be started. Try again in a moment."
+    },
+    "promptsTitle": "Prompts",
+    "promptsEmpty": "No prompts yet. Add the questions your customers ask an AI assistant.",
+    "promptsUsage": "{used} of {allowed} prompts on your plan",
+    "promptText": "Prompt",
+    "promptLanguage": "Language",
+    "promptTopic": "Topic",
+    "promptAdd": "Add prompt",
+    "promptAdding": "Adding…",
+    "promptDelete": "Delete",
+    "promptDeleteLabel": "Delete prompt: {text}",
+    "promptErrors": {
+      "text": "Write a prompt of up to 2,000 characters.",
+      "locale": "Choose one of the project's languages.",
+      "topic": "Choose a topic.",
+      "promptsLimit": "Your plan allows {allowed, plural, one {# prompt} other {# prompts}}. Delete one or upgrade to add more.",
+      "generic": "The prompt could not be added. Try again in a moment."
+    },
+    "topics": {
+      "reviews": "Reviews and opinions",
+      "pricing": "Price and plans",
+      "use_cases": "Use cases",
+      "alternatives": "Alternatives",
+      "how_to": "How-to guides",
+      "comparison": "Comparison"
+    }
+  },
+  "Engines": {
+    "openai": "ChatGPT",
+    "gemini": "Gemini",
+    "claude": "Claude"
+  },
   "Languages": {
     "en": "English",
     "de": "German",

@@ -26,12 +26,28 @@ Context that is not fully captured in the PRD or the ADRs. Read after `docs/PRD.
 - Wants Java in the portfolio: domain lives in `apps/core` (Spring Boot), UI in `apps/web` (Next.js).
 - Product conversation in Spanish; repository artifacts in English.
 
+## Production (live since 2026-11-24)
+
+| Piece | Where | Deploys |
+| --- | --- | --- |
+| Web | Vercel project `geomaster`, https://geomaster-coral.vercel.app, functions in `fra1` | Vercel GitHub integration on push to `main`; previews per PR |
+| Core | Fly.io app `geomaster-core` (fra, shared-cpu-1x 1 GB, always on, ~USD 6/month), https://geomaster-core.fly.dev | `.github/workflows/deploy-core.yml` (`FLY_API_TOKEN` repo secret); manual: `gh workflow run deploy-core.yml` |
+| Database | Neon Postgres (EU). Web uses the pooled URL; core uses the direct JDBC URL. Flyway migrates on core boot | — |
+
+- Secrets live only in Vercel env (production) and `fly secrets`; names are listed in `apps/core/fly.toml`. Never in the repo.
+- Google OAuth client (project `geomaster-515216`) has redirect URIs for localhost:3000, geo-masterizer.com and geomaster-coral.vercel.app.
+- Core runs with `OPENAI_ENABLED=true` in production; Gemini and Claude adapters are not built yet (scan-engine T8, T9).
+- Known gap: auto-merge (ADR-0019) merges with `GITHUB_TOKEN`, and pushes made with that token do not start workflows. `deploy-core.yml` (and the CI runs on `main`) therefore do not fire after an auto-merge until the auto-merge workflow uses a GitHub App or fine-grained PAT token. Until then, run `gh workflow run deploy-core.yml` after a core change lands.
+
 ## Open items
+
+- [ ] Auto-merge token so merges trigger `push` workflows (core auto-deploy).
+- [ ] Resend: verify a sending domain for geo-masterizer.com (magic links in production). Deferred by the owner.
+- [ ] Custom domain geo-masterizer.com on Vercel; then update `BETTER_AUTH_URL`, `SITE_URL`, core `WEB_JWKS_URI` / `SERVICE_TOKEN_*`.
+- [ ] Vercel preview env vars (previews currently have no DB/auth config).
 
 - [ ] Export the living PRD to `docs/PRD.md` (link inside that file).
 - [ ] Brand and design phase (2026-10-19 → 2026-11-01): tokens feed `packages/ui`.
-- [ ] Next step being decided: start specs with `scan-engine` + provider layer, or with `accounts-projects` for an end-to-end slice.
-- [ ] Deploy spike: confirm Neon plan/cost (ADR-0005) and Fly.io machine size (ADR-0006).
 - [ ] Queue spike: own SKIP LOCKED queue vs JobRunr fallback (ADR-0004).
 - [ ] Legal: VAT/EU OSS with an advisor; trademark check for GEOMASTER (Swissreg, EUIPO); confirm geo-masterizer.com registration.
 - [ ] Choose the 8 SMEs invited to the beta.
