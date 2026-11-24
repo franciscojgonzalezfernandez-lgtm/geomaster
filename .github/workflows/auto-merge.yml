@@ -1,6 +1,9 @@
 name: Auto-merge
 # Every non-draft PR from this repository merges by itself (squash) once the required checks pass:
 # web, core, web-smoke, core-smoke (ADR-0019). No code from the PR is checked out or run here.
+# AUTO_MERGE_TOKEN (fine-grained PAT: this repo, Contents + Pull requests read/write) makes the merge count
+# as the owner's, so the push to main starts workflows (deploy-core, CI on main). Pushes made with
+# GITHUB_TOKEN start none; it stays as the fallback so auto-merge keeps working without the secret.
 on:
   pull_request_target:
     types: [opened, reopened, ready_for_review]
@@ -14,5 +17,5 @@ jobs:
     steps:
       - name: Enable auto-merge
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ secrets.AUTO_MERGE_TOKEN || github.token }}
         run: gh pr merge "${{ github.event.pull_request.number }}" --repo "${{ github.repository }}" --auto --squash
