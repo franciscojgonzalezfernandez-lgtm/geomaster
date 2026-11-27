@@ -56,11 +56,15 @@ scan finalized + all extractions terminal ──► MentionResolver(project bran
 - **`ExtractorVersion`**: `ext-<n>` from config, plus a fingerprint (sha256 of prompt template,
   schema, model, effort, thinking, max tokens). A unit test pins fingerprint → version, so changing
   any input without bumping the version fails the build (REQ-17).
-- **`GroundingCheck` + `PositionLocator`** (pure Java): normalise (NFC, case-fold, collapse
-  whitespace) and drop brands whose name and evidence are both absent from the answer (REQ-7). The
-  position comes from the first index of name / alias / evidence in the text (REQ-8).
-- **`UrlScanner`** (pure Java): literal URLs in the answer text are merged with `llm_call_citation`
-  (REQ-9).
+- **`GroundingCheck` + `PositionLocator`** (pure Java): fold both sides (NFC, lower case,
+  typographic quotes and dashes as ASCII, hyphens as spaces, Markdown `*_\`` marks removed, whitespace
+  collapsed). A brand is kept only when its name or domain host appears as a whole word **and** its
+  evidence quote (outer quotes and ellipses dropped) appears verbatim; otherwise it is dropped and
+  counted (REQ-7). Positions are 1..n by the earliest index of name, domain or quote; ties keep the
+  model order (REQ-8). Aliases are tenant data and are not used here; the resolver applies them.
+- **`UrlScanner`** (pure Java): `llm_call_citation` URLs first, then literal `http(s)://` and `www.`
+  URLs in the text; the same page counts once (no fragment, `utm_*`, trailing slash or `www.`;
+  http as https), keeping the provider copy. Hostless or > 2048-char URLs are skipped (REQ-9).
 - **`ExtractionWorker`**: the same SKIP LOCKED claim, lease, backoff and circuit-breaker helpers as
   `ScanWorker`, on table `answer_extraction`. It has its own concurrency setting
   `geomaster.extractor.concurrency` (REQ-10).

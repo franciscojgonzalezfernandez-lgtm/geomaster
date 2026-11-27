@@ -1,5 +1,7 @@
 package com.geomaster.core.scan;
 
+import com.geomaster.core.extraction.UrlScanner;
+
 import com.geomaster.core.providers.Engine;
 import com.geomaster.core.providers.ProviderAnswer;
 import org.springframework.jdbc.core.simple.JdbcClient;
@@ -8,8 +10,6 @@ import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.math.BigDecimal;
-import java.net.URI;
-import java.util.Locale;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -71,15 +71,6 @@ public class LlmCallRepository {
     }
 
     static String domainOf(String url) {
-        try {
-            String host = URI.create(url).getHost();
-            if (host == null) {
-                return "";
-            }
-            host = host.toLowerCase(Locale.ROOT);
-            return host.startsWith("www.") ? host.substring(4) : host;
-        } catch (IllegalArgumentException e) {
-            return "";
-        }
+        return UrlScanner.domainOf(url);
     }
 }
