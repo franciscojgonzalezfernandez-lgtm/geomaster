@@ -51,6 +51,10 @@ public final class Extractor {
         return version;
     }
 
+    public String model() {
+        return props.model();
+    }
+
     /** @throws ExtractionException on provider failure, refusal, truncation or invalid output */
     public Extraction extract(String answerText) {
         StructuredResult call;
@@ -63,14 +67,19 @@ public final class Extractor {
         }
         CostCalculator.Cost cost = costs.cost(props.prices(), call.inputTokens(), call.outputTokens());
         switch (call.stopReason()) {
-            case StructuredResult.REFUSAL -> throw new ExtractionException("refusal", false, "extractor refused", null);
-            case StructuredResult.MAX_TOKENS -> throw new ExtractionException("max_tokens", true, "extractor output cut off", null);
+            case StructuredResult.REFUSAL -> throw new ExtractionException("refusal", false, "extractor refused", null, call, cost);
+            case StructuredResult.MAX_TOKENS -> throw new ExtractionException("max_tokens", true, "extractor output cut off", null, call, cost);
             case StructuredResult.END_TURN -> { }
             default -> throw new ExtractionException("stop_" + call.stopReason(), false,
-                    "unexpected stop reason " + call.stopReason(), null);
+                    "unexpected stop reason " + call.stopReason(), null, call, cost);
         }
         List<ExtractedBrand> brands = new ArrayList<>();
-        int dropped = parse(call.json(), brands);
+        int dropped;
+        try {
+            dropped = parse(call.json(), brands);
+        } catch (ExtractionException e) {
+            throw new ExtractionException(e.reason(), e.retryable(), e.getMessage(), null, call, cost);
+        }
         return new Extraction(List.copyOf(brands), dropped, call, cost);
     }
 

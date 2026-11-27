@@ -28,6 +28,7 @@ public record ExtractorProperties(
         String thinking,
         Integer maxTokens,
         Duration timeout,
+        Integer concurrency,
         ProvidersProperties.Prices prices) {
 
     static final Set<String> EFFORTS = Set.of("low", "medium", "high", "xhigh", "max");
@@ -40,10 +41,11 @@ public record ExtractorProperties(
         thinking = thinking == null ? "disabled" : thinking;
         maxTokens = maxTokens == null ? 2000 : maxTokens;
         timeout = timeout == null ? Duration.ofSeconds(60) : timeout;
+        concurrency = concurrency == null ? 4 : concurrency;
         if (!version.matches("ext-[0-9]+")) {
             throw new IllegalArgumentException("geomaster.extractor.version must look like ext-<n>");
         }
-        if (!EFFORTS.contains(effort) || !THINKING.contains(thinking) || maxTokens <= 0) {
+        if (!EFFORTS.contains(effort) || !THINKING.contains(thinking) || maxTokens <= 0 || concurrency <= 0) {
             throw new IllegalArgumentException("geomaster.extractor effort/thinking/max-tokens out of range");
         }
         if (enabled && prices == null) {
@@ -59,6 +61,6 @@ public record ExtractorProperties(
     public String toString() { // never print the key
         return "ExtractorProperties[enabled=" + enabled + ", version=" + version + ", model=" + model
                 + ", apiKey=" + (hasApiKey() ? "***" : "") + ", effort=" + effort + ", thinking=" + thinking
-                + ", maxTokens=" + maxTokens + ", timeout=" + timeout + ", prices=" + prices + "]";
+                + ", maxTokens=" + maxTokens + ", timeout=" + timeout + ", concurrency=" + concurrency + ", prices=" + prices + "]";
     }
 }

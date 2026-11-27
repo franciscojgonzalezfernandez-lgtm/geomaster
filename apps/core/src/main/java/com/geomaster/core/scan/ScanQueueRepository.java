@@ -1,5 +1,7 @@
 package com.geomaster.core.scan;
 
+import com.geomaster.core.extraction.ExtractionEnqueuer;
+
 import com.geomaster.core.providers.Engine;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
@@ -19,9 +21,11 @@ import java.util.UUID;
 public class ScanQueueRepository {
 
     private final JdbcClient db;
+    private final ExtractionEnqueuer extractions;
 
-    public ScanQueueRepository(JdbcClient db) {
+    public ScanQueueRepository(JdbcClient db, ExtractionEnqueuer extractions) {
         this.db = db;
+        this.extractions = extractions;
     }
 
     /**
@@ -95,6 +99,8 @@ public class ScanQueueRepository {
                     WHERE id = :scan AND account_id = :account
                     """)
                     .param("cost", costChf).param("scan", u.scanId()).param("account", u.accountId()).update();
+            // Same transaction: a done unit always has its extraction queued (extraction-analysis REQ-4).
+            extractions.enqueue(llmCallId);
         }
         return n == 1;
     }

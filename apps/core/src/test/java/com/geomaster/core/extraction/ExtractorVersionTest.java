@@ -29,7 +29,7 @@ class ExtractorVersionTest {
         ExtractorProperties props = new ExtractorProperties(false, p.getProperty("geomaster.extractor.version"),
                 defaultOf(p.getProperty("geomaster.extractor.model")), null,
                 p.getProperty("geomaster.extractor.effort"), p.getProperty("geomaster.extractor.thinking"),
-                Integer.valueOf(p.getProperty("geomaster.extractor.max-tokens")), Duration.ofSeconds(60), null);
+                Integer.valueOf(p.getProperty("geomaster.extractor.max-tokens")), Duration.ofSeconds(60), null, null);
         ExtractorVersion v = ExtractorVersion.of(props, ExtractorPrompt.v1());
         String pinned = PINS.get(v.version());
         assertNotNull(pinned, "no pin for " + v.version() + "; add: \"" + v.version() + "\", \"" + v.fingerprint() + "\"");

@@ -73,8 +73,13 @@ scan finalized + all extractions terminal ──► MentionResolver(project bran
 - **`ExtractionWorker`**: the same SKIP LOCKED claim, lease, backoff and circuit-breaker helpers as
   `ScanWorker`, on table `answer_extraction`. It has its own concurrency setting
   `geomaster.extractor.concurrency` (REQ-10).
-- **`ExtractionEnqueuer`**: called by `UnitExecutor` in the same transaction that marks a unit
-  `done`, via `INSERT … ON CONFLICT (llm_call_id, extractor_version) DO NOTHING` (REQ-4).
+- **`ExtractionEnqueuer`**: called from `ScanQueueRepository.markDone`, the transaction that marks a
+  unit `done` (fresh answer or cache hit), via `INSERT … ON CONFLICT (llm_call_id, extractor_version)
+  DO NOTHING` (REQ-4). It queues nothing while no extractor is configured, so answers produced with
+  the extractor off are not extracted later.
+- **Billing on failure:** a refused, cut-off or invalid reply was still billed, so its tokens and
+  cost are added to the extraction row on every attempt; only provider errors before a reply add
+  nothing (REQ-16). Exhausted retries end as `failed` / `max_attempts`.
 - **`BrandNormalizer` + `MentionResolver`**:
   - Normalisation: strip accents; lower-case; drop punctuation; drop legal suffixes; for domains,
     drop the scheme, `www.` and the TLD so the stem remains.

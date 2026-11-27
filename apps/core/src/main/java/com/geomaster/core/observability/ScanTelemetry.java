@@ -46,6 +46,11 @@ public final class ScanTelemetry {
     static final AttributeKey<String> GEN_AI_RESPONSE_MODEL = AttributeKey.stringKey("gen_ai.response.model");
     static final AttributeKey<Long> GEN_AI_INPUT_TOKENS = AttributeKey.longKey("gen_ai.usage.input_tokens");
     static final AttributeKey<Long> GEN_AI_OUTPUT_TOKENS = AttributeKey.longKey("gen_ai.usage.output_tokens");
+    static final AttributeKey<String> EXTRACTION_ID = AttributeKey.stringKey("geomaster.extraction.id");
+    static final AttributeKey<String> EXTRACTOR_VERSION = AttributeKey.stringKey("geomaster.extractor.version");
+    static final AttributeKey<Long> GROUNDING_REJECTIONS = AttributeKey.longKey("geomaster.extraction.grounding_rejections");
+    static final AttributeKey<Long> BRANDS = AttributeKey.longKey("geomaster.extraction.brands");
+    static final AttributeKey<String> EXTRACTION_REASON = AttributeKey.stringKey("geomaster.extraction.reason");
     static final AttributeKey<String> INPUT = AttributeKey.stringKey("langfuse.observation.input");
     static final AttributeKey<String> OUTPUT = AttributeKey.stringKey("langfuse.observation.output");
 
@@ -147,6 +152,59 @@ public final class ScanTelemetry {
     public void callFailed(Span span, Throwable error) {
         span.recordException(error);
         span.setStatus(StatusCode.ERROR, error.getClass().getSimpleName());
+        span.end();
+    }
+
+    /**
+     * Starts the extractor call span ({@code chat <model>}, extraction-analysis REQ-19). The session is
+     * the latest scan that used the answer; the answer text is attached only with content capture on.
+     */
+    public Span startExtraction(UUID extractionId, UUID sessionScanId, String model, String extractorVersion,
+                                int attempt, String answer) {
+        var b = tracer.spanBuilder("chat " + model).setSpanKind(SpanKind.CLIENT)
+                .setAttribute(GEN_AI_OPERATION, "chat")
+                .setAttribute(GEN_AI_SYSTEM, "claude")
+                .setAttribute(GEN_AI_REQUEST_MODEL, model)
+                .setAttribute(EXTRACTION_ID, extractionId.toString())
+                .setAttribute(EXTRACTOR_VERSION, extractorVersion)
+                .setAttribute(ATTEMPT, (long) attempt);
+        if (sessionScanId != null) {
+            b.setAttribute(SCAN_ID, sessionScanId.toString()).setAttribute(SESSION, sessionScanId.toString());
+        }
+        Span span = b.startSpan();
+        if (captureContent && answer != null) {
+            span.setAttribute(INPUT, answer);
+        }
+        return span;
+    }
+
+    /** Usage, cost and grounding figures of an extraction call; ends the span. */
+    public void extractionUsage(Span span, String responseModel, long inputTokens, long outputTokens,
+                                BigDecimal costChf, String priceVersion) {
+        if (responseModel != null) {
+            span.setAttribute(GEN_AI_RESPONSE_MODEL, responseModel);
+        }
+        span.setAttribute(GEN_AI_INPUT_TOKENS, inputTokens);
+        span.setAttribute(GEN_AI_OUTPUT_TOKENS, outputTokens);
+        if (costChf != null) {
+            span.setAttribute(COST_CHF, costChf.doubleValue());
+            span.setAttribute(PRICE_VERSION, priceVersion);
+        }
+    }
+
+    public void extractionDone(Span span, int brands, int groundingRejections, String outputJson) {
+        span.setAttribute(BRANDS, (long) brands);
+        span.setAttribute(GROUNDING_REJECTIONS, (long) groundingRejections);
+        if (captureContent && outputJson != null) {
+            span.setAttribute(OUTPUT, outputJson);
+        }
+        span.end();
+    }
+
+    public void extractionFailed(Span span, String reason, Throwable error) {
+        span.setAttribute(EXTRACTION_REASON, reason);
+        span.recordException(error);
+        span.setStatus(StatusCode.ERROR, reason);
         span.end();
     }
 }
