@@ -125,6 +125,11 @@ public final class Plans {
         require(planId, "prompts", get(planId).prompts(), promptsAfterCreate);
     }
 
+    /** Reject when a project would track more competitors than allowed (extraction-analysis REQ-2). */
+    public void requireCompetitors(String planId, int competitorsAfterCreate) {
+        require(planId, "competitorsPerDomain", get(planId).competitorsPerDomain(), competitorsAfterCreate);
+    }
+
     private static void require(String planId, String limit, Integer allowed, int requested) {
         if (!Plan.within(allowed, requested)) {
             throw new PlanLimitExceededException(planId, limit, allowed);
