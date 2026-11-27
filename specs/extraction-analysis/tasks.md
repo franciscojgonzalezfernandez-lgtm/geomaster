@@ -2,7 +2,7 @@
 
 🔑 = needs `ANTHROPIC_API_KEY` (Fly secret for production, repo secret for the CI eval).
 
-- [ ] T1 — Flyway `V6__extraction_analysis.sql`: `brand`, `brand_alias`, `answer_extraction`, `answer_brand`,
+- [x] T1 — Flyway `V6__extraction_analysis.sql`: `brand`, `brand_alias`, `answer_extraction`, `answer_brand`,
       `scan_mention`, `scan_citation`, new `scan` columns; backfill an own brand for existing projects. (REQ-1, REQ-16..REQ-18)
 - [ ] T2 — Brands API: own brand created with the project, rename, aliases, competitors within
       `competitorsPerDomain`; soft deletes; contract regenerated. (REQ-1..REQ-3, REQ-23)
