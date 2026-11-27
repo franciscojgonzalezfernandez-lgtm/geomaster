@@ -101,11 +101,15 @@ answer_extraction(id, llm_call_id → llm_call, extractor_version, status queued
                   UNIQUE (llm_call_id, extractor_version))
 answer_brand     (extraction_id, ordinal, name, normalized, domain, sentiment, recommended,
                   evidence, position, PRIMARY KEY (extraction_id, ordinal))
-scan_mention     (account_id, scan_id, scan_unit_id, brand_id NULL = untracked, extracted_name,
-                  position, sentiment, recommended, resolver_version)
-scan_citation    (account_id, scan_id, scan_unit_id, url, domain, class own|competitor|third_party,
-                  brand_id NULL, resolver_version)
-scan             + analysed_at, extraction_cost_chf, answers_extracted, extractions_failed
+scan_mention     (account_id, scan_id, scan_unit_id, extraction_id, ordinal → answer_brand,
+                  brand_id NULL = untracked, extracted_name, position, sentiment, recommended,
+                  resolver_version, PRIMARY KEY (scan_unit_id, ordinal),
+                  UNIQUE (scan_unit_id, brand_id) WHERE brand_id IS NOT NULL)
+scan_citation    (account_id, scan_id, scan_unit_id, url, domain, source provider|text,
+                  class own|competitor|third_party, brand_id NULL, resolver_version,
+                  PRIMARY KEY (scan_unit_id, url))
+scan             + analysed_at, extraction_cost_chf, answers_extracted, extractions_failed,
+                   grounding_rejections
 ```
 
 - **Shared rows.** `answer_extraction` and `answer_brand` hang off the shared `llm_call`, like
