@@ -31,8 +31,13 @@ scan finalized + all extractions terminal ──► MentionResolver(project bran
   the raw JSON string, stop reason, model, model version, tokens, latency. Cost is computed by the
   existing `CostCalculator` from `geomaster.extractor.prices.*`.
 - **`AnthropicClients`** (new, `providers.claude`): builds one thread-safe `AnthropicClient` from
-  `ANTHROPIC_API_KEY` with the official Java SDK (`com.anthropic:anthropic-java`). Shared by the
-  extractor and the later `ClaudeAdapter` (scan-engine T9), so T9 only adds `answerWithSearch`.
+  `ANTHROPIC_API_KEY` with the official Java SDK (`com.anthropic:anthropic-java`, pinned). Shared by the
+  extractor and the later `ClaudeAdapter` (scan-engine T9), so T9 only adds `answerWithSearch`. Until
+  T9 the `ClaudeAdapter` is built inside the extractor bean only (not registered as an engine
+  adapter), and the extractor is off unless `EXTRACTOR_ENABLED=true`.
+- **Length limits:** structured outputs reject `minLength`/`maxLength`, so the 200-char name and
+  evidence limits are enforced in code: an empty or over-long name drops the brand, an over-long
+  quote is cut to its first 200 characters (still verbatim).
 - **Extractor request** (Messages API):
   - model `claude-haiku-5-5` (config `geomaster.extractor.model`; NFR-12).
   - Structured outputs: `output_config.format` with type `json_schema` and the schema below.

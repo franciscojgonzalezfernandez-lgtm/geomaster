@@ -2,7 +2,8 @@
 #   fly deploy --config apps/core/fly.toml
 # Secrets (fly secrets set): DATABASE_URL (jdbc:postgresql://…?sslmode=require), DATABASE_USER,
 # DATABASE_PASSWORD, WEB_JWKS_URI, SERVICE_TOKEN_ISSUER, SERVICE_TOKEN_AUDIENCE, OPENAI_API_KEY,
-# OPENAI_ENABLED, OTEL_EXPORTER_OTLP_HEADERS (Langfuse auth; scripts/set-langfuse-secret.sh).
+# OPENAI_ENABLED, ANTHROPIC_API_KEY, EXTRACTOR_ENABLED (extraction-analysis T4),
+# OTEL_EXPORTER_OTLP_HEADERS (Langfuse auth; scripts/set-langfuse-secret.sh).
 app = "geomaster-core"
 primary_region = "fra"
 

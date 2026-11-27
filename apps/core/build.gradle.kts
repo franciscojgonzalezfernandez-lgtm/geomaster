@@ -35,6 +35,10 @@ dependencies {
 		// swagger-annotations-jakarta 2.2.55, and the older copy breaks /v3/api-docs (NoSuchMethodError).
 		exclude(group = "io.swagger.core.v3", module = "swagger-annotations")
 	}
+	// Claude extractor (extraction-analysis T4) and the later Claude engine (scan-engine T9).
+	implementation("com.anthropic:anthropic-java:3.8.0") {
+		exclude(group = "io.swagger.core.v3", module = "swagger-annotations")
+	}
 	implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:3.1.1")
 	implementation("org.flywaydb:flyway-database-postgresql")
 	// Custom spans per scan and per LLM call (T11); the agent supplies the SDK at runtime.
