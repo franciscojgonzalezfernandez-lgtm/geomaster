@@ -1,6 +1,7 @@
 package com.geomaster.core.accounts;
 
 import com.geomaster.core.api.InvalidInputException;
+import com.geomaster.core.brands.BrandRepository;
 import com.geomaster.core.api.NotFoundException;
 import com.geomaster.core.plans.Plans;
 import com.geomaster.core.tenant.TenantContext;
@@ -33,11 +34,13 @@ public class ProjectService {
     private final ProjectRepository projects;
     private final AccountRepository accounts;
     private final Plans plans;
+    private final BrandRepository brands;
 
-    public ProjectService(ProjectRepository projects, AccountRepository accounts, Plans plans) {
+    public ProjectService(ProjectRepository projects, AccountRepository accounts, Plans plans, BrandRepository brands) {
         this.projects = projects;
         this.accounts = accounts;
         this.plans = plans;
+        this.brands = brands;
     }
 
     @Transactional
@@ -57,7 +60,9 @@ public class ProjectService {
         }
         plans.requireLanguages(account.planId(), languages.size());
         plans.requireDomains(account.planId(), projects.countActiveForCurrentAccount() + 1);
-        return new CreateResult(view(projects.create(domain, country, region, languages)), true);
+        Project created = projects.create(domain, country, region, languages);
+        brands.createOwn(created.id(), created.domain()); // extraction-analysis REQ-1
+        return new CreateResult(view(created), true);
     }
 
     public List<ProjectView> list() {

@@ -157,6 +157,263 @@ paths:
       summary: Get one of the account's projects
       tags:
       - projects-controller
+  /v1/projects/{projectId}/brands:
+    get:
+      operationId: list_2
+      parameters:
+      - in: path
+        name: projectId
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BrandsResponse"
+          description: Brands
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+          description: Missing or invalid service token
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+          description: No such project in this account
+      summary: "The project's own brand and its competitors, with aliases"
+      tags:
+      - brands-controller
+    post:
+      operationId: addCompetitor
+      parameters:
+      - in: path
+        name: projectId
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateCompetitorRequest"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BrandResponse"
+          description: Competitor created
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+          description: Missing or invalid service token
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+          description: No such project in this account
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+          description: "Invalid input or matches an existing brand (field), or plan\
+            \ limit exceeded (limit, allowed)"
+      summary: "Add a competitor (name, optional domain and name aliases) within the\
+        \ plan's competitorsPerDomain limit"
+      tags:
+      - brands-controller
+  /v1/projects/{projectId}/brands/{brandId}:
+    delete:
+      operationId: deleteCompetitor
+      parameters:
+      - in: path
+        name: projectId
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - in: path
+        name: brandId
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "204":
+          description: Competitor deleted
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+          description: Missing or invalid service token
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+          description: No such brand in this project
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+          description: The own brand cannot be deleted (field)
+      summary: "Delete a competitor; past mentions keep it, new scans no longer resolve\
+        \ to it"
+      tags:
+      - brands-controller
+    patch:
+      operationId: rename
+      parameters:
+      - in: path
+        name: projectId
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - in: path
+        name: brandId
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateBrandRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BrandResponse"
+          description: Updated brand
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+          description: Missing or invalid service token
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+          description: No such brand in this project
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+          description: Invalid name or matches another brand (field)
+      summary: Rename a brand (own or competitor)
+      tags:
+      - brands-controller
+  /v1/projects/{projectId}/brands/{brandId}/aliases:
+    post:
+      operationId: addAlias
+      parameters:
+      - in: path
+        name: projectId
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - in: path
+        name: brandId
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateAliasRequest"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BrandResponse"
+          description: Brand with the new alias
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+          description: Missing or invalid service token
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+          description: No such brand in this project
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+          description: Invalid alias or matches a brand already in the project (field)
+      summary: Add a name or domain alias to a brand
+      tags:
+      - brands-controller
+  /v1/projects/{projectId}/brands/{brandId}/aliases/{aliasId}:
+    delete:
+      operationId: deleteAlias
+      parameters:
+      - in: path
+        name: projectId
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - in: path
+        name: brandId
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - in: path
+        name: aliasId
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "204":
+          description: Alias deleted
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+          description: Missing or invalid service token
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+          description: No such brand or alias in this project
+      summary: Delete an alias; it no longer matches from the next resolution
+      tags:
+      - brands-controller
   /v1/projects/{projectId}/prompts:
     get:
       operationId: list_1
@@ -494,6 +751,60 @@ components:
           type: string
         planId:
           type: string
+    AliasResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        kind:
+          type: string
+        value:
+          type: string
+    BrandResponse:
+      type: object
+      properties:
+        aliases:
+          type: array
+          items:
+            $ref: "#/components/schemas/AliasResponse"
+        createdAt:
+          type: string
+          format: date-time
+        id:
+          type: string
+          format: uuid
+        kind:
+          type: string
+        name:
+          type: string
+    BrandsResponse:
+      type: object
+      properties:
+        competitors:
+          type: array
+          items:
+            $ref: "#/components/schemas/BrandResponse"
+        own:
+          $ref: "#/components/schemas/BrandResponse"
+    CreateAliasRequest:
+      type: object
+      properties:
+        kind:
+          type: string
+        value:
+          type: string
+    CreateCompetitorRequest:
+      type: object
+      properties:
+        aliases:
+          type: array
+          items:
+            type: string
+        domain:
+          type: string
+        name:
+          type: string
     CreateProjectRequest:
       type: object
       properties:
@@ -645,6 +956,11 @@ components:
         unitsTotal:
           type: integer
           format: int32
+    UpdateBrandRequest:
+      type: object
+      properties:
+        name:
+          type: string
     UpdatePromptRequest:
       type: object
       properties:
