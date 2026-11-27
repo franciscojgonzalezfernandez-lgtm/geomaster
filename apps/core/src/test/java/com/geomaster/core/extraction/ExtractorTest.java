@@ -32,7 +32,7 @@ class ExtractorTest {
     static final ProvidersProperties.Prices PRICES = new ProvidersProperties.Prices("anthropic-test",
             new BigDecimal("0.10"), new BigDecimal("0.50"), BigDecimal.ZERO);
     static final ExtractorProperties PROPS = new ExtractorProperties(true, "ext-1", "claude-haiku-5-5", "k",
-            "low", "disabled", 2000, Duration.ofSeconds(5), PRICES);
+            "low", "disabled", 2000, Duration.ofSeconds(5), 2, PRICES);
     static final CostCalculator COSTS = new CostCalculator(new ProvidersProperties(new BigDecimal("0.80"), Map.of()));
 
     static Extractor extractor(Function<StructuredRequest, StructuredResult> behaviour) {
