@@ -22,6 +22,15 @@ public final class CostCalculator {
 
     public record Cost(BigDecimal chf, String priceVersion) {}
 
+    /** Cost of a call without searches (the extractor, REQ-16) at {@code prices}. */
+    public Cost cost(ProvidersProperties.Prices prices, long inputTokens, long outputTokens) {
+        BigDecimal usd = BigDecimal.valueOf(inputTokens).multiply(prices.inputPerMillionUsd())
+                .divide(MILLION, MathContext.DECIMAL64)
+                .add(BigDecimal.valueOf(outputTokens).multiply(prices.outputPerMillionUsd())
+                        .divide(MILLION, MathContext.DECIMAL64));
+        return new Cost(usd.multiply(props.usdToChf()).setScale(6, RoundingMode.HALF_UP), prices.version());
+    }
+
     public Cost cost(Engine engine, ProviderAnswer answer) {
         ProvidersProperties.Prices p = props.engine(engine).prices();
         if (p == null) {

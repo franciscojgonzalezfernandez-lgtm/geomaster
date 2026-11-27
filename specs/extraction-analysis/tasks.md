@@ -8,7 +8,7 @@
       `competitorsPerDomain`; soft deletes; contract regenerated. Includes `BrandNormalizer` (keys are needed
       for the duplicate check). (REQ-1..REQ-3, REQ-12, REQ-23)
 - [x] T3 — `GroundingCheck`, `PositionLocator`, `UrlScanner` (pure Java, table tests). (REQ-7..REQ-9, REQ-12)
-- [ ] T4 — 🔑 `extractStructured` on `ProviderAdapter`, shared `AnthropicClients`, Claude Haiku 5.5 structured
+- [x] T4 — 🔑 `extractStructured` on `ProviderAdapter`, shared `AnthropicClients`, Claude Haiku 5.5 structured
       output with prompt v1, schema v1, `ExtractorVersion` fingerprint pin, extractor prices in config. (REQ-5, REQ-6, REQ-11, REQ-17)
 - [ ] T5 — `ExtractionEnqueuer` in `UnitExecutor` + `ExtractionWorker` (claim, lease, retry, refusal/invalid
       output terminal), cost recorded, extraction span. (REQ-4, REQ-10, REQ-16, REQ-19)

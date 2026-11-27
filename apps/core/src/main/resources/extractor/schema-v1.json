@@ -1,0 +1,39 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["brands"],
+  "properties": {
+    "brands": {
+      "type": "array",
+      "description": "Every brand the answer names, in the order they first appear. Empty when none.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "domain", "sentiment", "recommended", "evidence"],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "The brand exactly as written in the answer, without added legal suffixes."
+          },
+          "domain": {
+            "anyOf": [{ "type": "string" }, { "type": "null" }],
+            "description": "The brand's website domain only if the answer states it (e.g. example.ch), else null."
+          },
+          "sentiment": {
+            "type": "string",
+            "enum": ["positive", "neutral", "negative"],
+            "description": "How the answer speaks about this brand."
+          },
+          "recommended": {
+            "type": "boolean",
+            "description": "True only if the answer recommends or suggests choosing this brand."
+          },
+          "evidence": {
+            "type": "string",
+            "description": "A short quote copied verbatim from the answer (at most 200 characters) that mentions the brand."
+          }
+        }
+      }
+    }
+  }
+}

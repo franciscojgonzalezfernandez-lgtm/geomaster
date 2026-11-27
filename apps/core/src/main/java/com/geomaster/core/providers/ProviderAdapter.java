@@ -11,4 +11,12 @@ public interface ProviderAdapter {
 
     /** Ask with web search on; throws {@link ProviderException} on failure. */
     ProviderAnswer answerWithSearch(AnswerRequest request);
+
+    /**
+     * Schema-constrained structured output without tools (extraction-analysis REQ-5). Only adapters
+     * whose provider serves the extractor implement it; throws {@link ProviderException} on failure.
+     */
+    default StructuredResult extractStructured(StructuredRequest request) {
+        throw new UnsupportedOperationException(engine().id() + " does not serve structured extraction");
+    }
 }
