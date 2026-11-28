@@ -14,7 +14,7 @@
       output terminal), cost recorded, extraction span. (REQ-4, REQ-10, REQ-16, REQ-19)
 - [x] T6 — `MentionResolver` + `ScanAnalyser`: per-scan resolution, citation classes, scan analysed with
       totals and versions; `ReResolveJob` after brand edits. (REQ-12..REQ-15, REQ-18)
-- [ ] T7 — Mentions API `GET /v1/scans/{id}/mentions`; contract regenerated. (REQ-24)
+- [x] T7 — Mentions API `GET /v1/scans/{id}/mentions`; contract regenerated. (REQ-24)
 - [ ] T8 — Eval dataset v1: ≥ 30 labelled answers per language from real scans (owner reviews labels). (REQ-20)
 - [ ] T9 — 🔑 `:core:extractorEval` scoring and report + `extractor-eval` CI job (path-gated, weekly) as a
       required check. (REQ-21, REQ-22)
