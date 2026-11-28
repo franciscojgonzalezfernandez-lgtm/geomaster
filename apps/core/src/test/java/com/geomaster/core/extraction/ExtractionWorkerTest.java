@@ -42,7 +42,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/** Extraction queue end to end with a fake engine and a fake extractor model (extraction-analysis T5). */
+/** Extraction queue and scan analysis end to end with a fake engine and a fake extractor model (extraction-analysis T5, T6). */
 @Import({TestcontainersConfiguration.class, ExtractionWorkerTest.Fakes.class})
 @SpringBootTest(properties = {
         "geomaster.providers.real-adapters=false",
@@ -60,7 +60,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
         "geomaster.providers.engines.claude.enabled=false"})
 class ExtractionWorkerTest {
 
-    static final String ANSWER = "Für Snowboardkurse empfehle ich Ride Flumserberg. Die Skischule Flumserberg ist oft ausgebucht.";
+    static final String ANSWER = "Für Snowboardkurse empfehle ich Ride Flumserberg. Die Skischule Flumserberg ist oft ausgebucht. Mehr auf www.ride-flumserberg.ch/kurse.";
     static final String OUTPUT = """
             {"brands":[
               {"name":"Skischule Flumserberg","domain":null,"sentiment":"neutral","recommended":false,
@@ -282,6 +282,119 @@ class ExtractionWorkerTest {
         assertEquals(0, ((BigDecimal) x.get("cost_chf")).signum(), "no call was billed");
         assertTrue(SPANS.getFinishedSpanItems().stream().filter(s -> s.getName().startsWith("chat claude"))
                 .allMatch(s -> "provider_retryable".equals(s.getAttributes().get(AttributeKey.stringKey("geomaster.extraction.reason")))));
+    }
+
+    UUID brand(Fixture f, String kind, String name, String domain) {
+        UUID project = db.sql("SELECT project_id FROM scan WHERE id = :s").param("s", f.scan()).query(UUID.class).single();
+        UUID id = db.sql("INSERT INTO brand (account_id, project_id, kind, name) VALUES (:a, :p, :k, :n) RETURNING id")
+                .param("a", f.account()).param("p", project).param("k", kind).param("n", name).query(UUID.class).single();
+        if (domain != null) {
+            db.sql("""
+                    INSERT INTO brand_alias (account_id, project_id, brand_id, kind, value, normalized)
+                    VALUES (:a, :p, :b, 'domain', :v, :n)
+                    """).param("a", f.account()).param("p", project).param("b", id).param("v", domain)
+                    .param("n", com.geomaster.core.brands.BrandNormalizer.domain(domain)).update();
+        }
+        return id;
+    }
+
+    void analyse() {
+        for (int i = 0; i < 10 && extractions.analyseOnce() > 0; i++) { }
+    }
+
+    Map<String, Object> scanRow(Fixture f) {
+        return db.sql("""
+                SELECT analysed_at, answers_extracted, extractions_failed, grounding_rejections, extraction_cost_chf,
+                       cost_chf - (SELECT sum(u.cost_chf) FROM scan_unit u WHERE u.scan_id = s.id) AS added_cost,
+                       brands_version, versions -> 'extractor' ->> 'version' AS extractor,
+                       versions ->> 'resolver' AS resolver, versions -> 'engines' IS NOT NULL AS engines_kept
+                FROM scan s WHERE id = :s
+                """).param("s", f.scan()).query().singleRow();
+    }
+
+    List<String> mentions(Fixture f, UUID own, UUID rival) {
+        return db.sql("SELECT position, brand_id, extracted_name FROM scan_mention WHERE scan_id = :s ORDER BY position")
+                .param("s", f.scan())
+                .query((rs, i) -> {
+                    UUID b = rs.getObject("brand_id", UUID.class);
+                    String who = b == null ? "untracked" : b.equals(own) ? "own" : b.equals(rival) ? "competitor" : "?";
+                    return rs.getInt("position") + ":" + who + ":" + rs.getString("extracted_name");
+                }).list();
+    }
+
+    List<String> citations(Fixture f) {
+        return db.sql("SELECT domain || ':' || source || ':' || class FROM scan_citation WHERE scan_id = :s ORDER BY domain")
+                .param("s", f.scan()).query(String.class).list();
+    }
+
+    @Test
+    void finishedScanIsAnalysedWithMentionsCitationsCostAndVersions() {
+        Fixture f = fixture("Analyse " + UUID.randomUUID());
+        UUID own = brand(f, "own", "Ride Flumserberg", "ride-flumserberg.ch");
+        db.sql("UPDATE scan SET versions = '{\"engines\":{}}' WHERE id = :s").param("s", f.scan()).update();
+        drainScans();
+        analyse();
+        assertNull(scanRow(f).get("analysed_at"), "not analysed while its extraction is queued (REQ-12)");
+
+        drainExtractions();
+        analyse();
+        Map<String, Object> s = scanRow(f);
+        assertTrue(s.get("analysed_at") != null);
+        assertEquals(1, s.get("answers_extracted"));
+        assertEquals(0, s.get("extractions_failed"));
+        assertEquals(1, s.get("grounding_rejections"));
+        assertEquals(0, new BigDecimal("0.000160").compareTo((BigDecimal) s.get("extraction_cost_chf")));
+        assertEquals(0, new BigDecimal("0.000160").compareTo((BigDecimal) s.get("added_cost")), "REQ-16");
+        assertEquals("ext-1", s.get("extractor"));
+        assertEquals("res-1", s.get("resolver"));
+        assertEquals(true, s.get("engines_kept"), "analysis adds to the planner's versions");
+        assertEquals(0, s.get("brands_version"));
+
+        assertEquals(List.of("1:own:Ride Flumserberg", "2:untracked:Skischule Flumserberg"), mentions(f, own, null));
+        assertEquals(List.of("example.com:provider:third_party", "ride-flumserberg.ch:text:own"), citations(f));
+
+        analyse();
+        assertEquals(0, new BigDecimal("0.000160").compareTo((BigDecimal) scanRow(f).get("added_cost")),
+                "a second sweep never adds the cost again");
+    }
+
+    @Test
+    void brandEditReResolvesWithoutCallingTheModel() {
+        Fixture f = fixture("Reresolve " + UUID.randomUUID());
+        UUID own = brand(f, "own", "Ride Flumserberg", "ride-flumserberg.ch");
+        drainScans();
+        drainExtractions();
+        analyse();
+
+        UUID rival = brand(f, "competitor", "Skischule Flumserberg", "skischule-flumserberg.ch");
+        db.sql("UPDATE project SET brands_version = brands_version + 1 WHERE id = (SELECT project_id FROM scan WHERE id = :s)")
+                .param("s", f.scan()).update();
+        SCRIPT.add(r -> {
+            throw new AssertionError("re-resolution must not call the model (REQ-15)");
+        });
+        analyse();
+
+        assertEquals(List.of("1:own:Ride Flumserberg", "2:competitor:Skischule Flumserberg"), mentions(f, own, rival));
+        assertEquals(1, scanRow(f).get("brands_version"));
+        assertEquals(1, ((Number) extraction().get("attempts")).intValue());
+        assertEquals(1, SCRIPT.size(), "the scripted model call was never used");
+    }
+
+    @Test
+    void failedExtractionStillAnalysesTheScanAndClassifiesCitations() {
+        SCRIPT.add(r -> reply("", StructuredResult.REFUSAL));
+        Fixture f = fixture("Refused " + UUID.randomUUID());
+        brand(f, "own", "Ride Flumserberg", "ride-flumserberg.ch");
+        drainScans();
+        drainExtractions();
+        analyse();
+
+        Map<String, Object> s = scanRow(f);
+        assertEquals(0, s.get("answers_extracted"));
+        assertEquals(1, s.get("extractions_failed"));
+        assertEquals(0, new BigDecimal("0.000160").compareTo((BigDecimal) s.get("added_cost")), "a refusal was billed");
+        assertEquals(0, count("scan_mention WHERE scan_id = '" + f.scan() + "'"));
+        assertEquals(2, citations(f).size(), "citations need no model (REQ-9, REQ-14)");
     }
 
     int count(String table) {

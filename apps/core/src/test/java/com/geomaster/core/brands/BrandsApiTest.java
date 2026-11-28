@@ -16,7 +16,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/** Brands API over a real Postgres (extraction-analysis T2). */
+/** Brands API over a real Postgres (extraction-analysis T2, T6). */
 class BrandsApiTest extends ApiTestSupport {
 
     UUID project(Session s, String domain) throws Exception {
@@ -96,6 +96,9 @@ class BrandsApiTest extends ApiTestSupport {
         assertEquals(1, db.sql("SELECT count(*) FROM brand WHERE id = :id AND deleted_at IS NOT NULL")
                 .param("id", rival).query(Integer.class).single());
         addCompetitor(s, project, "{\"name\":\"Skischule Flumserberg AG\"}").andExpect(status().isCreated());
+        // Six successful edits, each queues re-resolution of the project's scans (REQ-15); the 404 is not one.
+        assertEquals(6, db.sql("SELECT brands_version FROM project WHERE id = :id")
+                .param("id", project).query(Integer.class).single());
     }
 
     @Test

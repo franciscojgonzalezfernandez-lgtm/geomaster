@@ -12,7 +12,7 @@
       output with prompt v1, schema v1, `ExtractorVersion` fingerprint pin, extractor prices in config. (REQ-5, REQ-6, REQ-11, REQ-17)
 - [x] T5 — `ExtractionEnqueuer` in `UnitExecutor` + `ExtractionWorker` (claim, lease, retry, refusal/invalid
       output terminal), cost recorded, extraction span. (REQ-4, REQ-10, REQ-16, REQ-19)
-- [ ] T6 — `MentionResolver` + `ScanAnalyser`: per-scan resolution, citation classes, scan analysed with
+- [x] T6 — `MentionResolver` + `ScanAnalyser`: per-scan resolution, citation classes, scan analysed with
       totals and versions; `ReResolveJob` after brand edits. (REQ-12..REQ-15, REQ-18)
 - [ ] T7 — Mentions API `GET /v1/scans/{id}/mentions`; contract regenerated. (REQ-24)
 - [ ] T8 — Eval dataset v1: ≥ 30 labelled answers per language from real scans (owner reviews labels). (REQ-20)

@@ -11,6 +11,9 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
+
 import java.time.Clock;
 
 /** The extractor, wired only when {@code geomaster.extractor.enabled=true}; then a key is mandatory (fail fast). */
@@ -31,8 +34,14 @@ public class ExtractionConfig {
     /** Always registered; idle without an {@link Extractor} (disabled, or no test extractor). */
     @Bean
     ExtractionWorker extractionWorker(ExtractionQueueRepository queue, ObjectProvider<Extractor> extractor,
-                                      ExtractorProperties props, ScanWorkerProperties worker, ScanTelemetry telemetry) {
+                                      ExtractorProperties props, ScanWorkerProperties worker, ScanTelemetry telemetry,
+                                      ScanAnalyser analyser) {
         return new ExtractionWorker(queue, extractor.getIfAvailable(), props.concurrency(), worker, telemetry,
-                Clock.systemUTC());
+                analyser, Clock.systemUTC());
+    }
+
+    @Bean
+    ScanAnalyser scanAnalyser(AnalysisRepository repo, PlatformTransactionManager txManager) {
+        return new ScanAnalyser(repo, new TransactionTemplate(txManager));
     }
 }
