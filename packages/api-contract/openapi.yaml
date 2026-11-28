@@ -678,6 +678,39 @@ paths:
       summary: A scan with its progress per engine and its cost
       tags:
       - scans-controller
+  /v1/scans/{scanId}/mentions:
+    get:
+      operationId: getScanMentions
+      parameters:
+      - in: path
+        name: scanId
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScanMentions"
+          description: Mentions; analysedAt is null until the scan is analysed
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+          description: Missing or invalid service token
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+          description: No such scan in this account
+      summary: "Per answer: tracked brands with position, sentiment, recommended flag\
+        \ and evidence, untracked brands and classified citations"
+      tags:
+      - mentions-controller
   /v1/users/me:
     patch:
       operationId: update
@@ -761,6 +794,36 @@ components:
           type: string
         value:
           type: string
+    Answer:
+      type: object
+      properties:
+        citations:
+          type: array
+          items:
+            $ref: "#/components/schemas/Citation"
+        engine:
+          type: string
+        extraction:
+          type: string
+        locale:
+          type: string
+        mentions:
+          type: array
+          items:
+            $ref: "#/components/schemas/Mention"
+        promptId:
+          type: string
+          format: uuid
+        sample:
+          type: integer
+          format: int32
+        unitId:
+          type: string
+          format: uuid
+        untracked:
+          type: array
+          items:
+            $ref: "#/components/schemas/Untracked"
     BrandResponse:
       type: object
       properties:
@@ -787,6 +850,20 @@ components:
             $ref: "#/components/schemas/BrandResponse"
         own:
           $ref: "#/components/schemas/BrandResponse"
+    Citation:
+      type: object
+      properties:
+        brandId:
+          type: string
+          format: uuid
+        domain:
+          type: string
+        domainClass:
+          type: string
+        source:
+          type: string
+        url:
+          type: string
     CreateAliasRequest:
       type: object
       properties:
@@ -846,6 +923,27 @@ components:
         total:
           type: integer
           format: int32
+    Mention:
+      type: object
+      properties:
+        brandId:
+          type: string
+          format: uuid
+        brandKind:
+          type: string
+        brandName:
+          type: string
+        evidence:
+          type: string
+        extractedName:
+          type: string
+        position:
+          type: integer
+          format: int32
+        recommended:
+          type: boolean
+        sentiment:
+          type: string
     ProblemDetail:
       type: object
       properties:
@@ -914,6 +1012,32 @@ components:
           $ref: "#/components/schemas/AccountResponse"
         user:
           $ref: "#/components/schemas/UserResponse"
+    ScanMentions:
+      type: object
+      properties:
+        analysedAt:
+          type: string
+          format: date-time
+        answers:
+          type: array
+          items:
+            $ref: "#/components/schemas/Answer"
+        answersExtracted:
+          type: integer
+          format: int32
+        extractionsFailed:
+          type: integer
+          format: int32
+        extractorVersion:
+          type: string
+        groundingRejections:
+          type: integer
+          format: int32
+        resolverVersion:
+          type: string
+        scanId:
+          type: string
+          format: uuid
     ScanView:
       type: object
       properties:
@@ -956,6 +1080,20 @@ components:
         unitsTotal:
           type: integer
           format: int32
+    Untracked:
+      type: object
+      properties:
+        evidence:
+          type: string
+        name:
+          type: string
+        position:
+          type: integer
+          format: int32
+        recommended:
+          type: boolean
+        sentiment:
+          type: string
     UpdateBrandRequest:
       type: object
       properties:
