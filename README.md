@@ -183,18 +183,18 @@ GEOMASTER is also a portfolio piece for agentic software development. One person
 
 ```mermaid
 flowchart LR
-  subgraph Owner decides
+  subgraph owner["Owner decides"]
     PRD[PRD<br/>FR-/NFR- IDs]
     ADR[ADRs<br/>accepted decisions]
   end
-  subgraph Agent proposes, owner approves
+  subgraph review["Agent proposes, owner approves"]
     SPEC[Spec<br/>EARS requirements<br/>design · tasks]
   end
-  subgraph Agent executes
+  subgraph agent["Agent executes"]
     TASK[One task] --> WT[Isolated git worktree<br/>Claude Code]
     WT --> PR[PR · refs spec,<br/>task and REQ IDs]
   end
-  subgraph CI decides
+  subgraph gate["CI decides"]
     CI{web · core ·<br/>web-smoke · core-smoke}
   end
   PRD --> ADR --> SPEC --> TASK
@@ -236,7 +236,7 @@ The first version of this process ([ADR-0018](docs/adr/0018-automated-pr-review-
 | --- | --- | --- |
 | [Accounts & projects](specs/accounts-projects/tasks.md) | 13 / 15 | Core integration tests for provisioning and tenant isolation; self-service account deletion (nDSG/GDPR) |
 | [Scan engine](specs/scan-engine/tasks.md) | 10 / 13 | Gemini adapter, Claude adapter, `providerSmoke` task against the real APIs |
-| [Extraction & analysis](specs/extraction-analysis/tasks.md) | 5 / 10 | Mention resolution and scan analysis, mentions API, eval dataset v1, extractor eval in CI, brands editor in web |
+| [Extraction & analysis](specs/extraction-analysis/tasks.md) | 7 / 10 | Eval dataset v1, extractor eval in CI, brands editor in web |
 
 ### Closed beta (from 2026-12-14)
 
