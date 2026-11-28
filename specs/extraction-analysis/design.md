@@ -86,12 +86,32 @@ scan finalized + all extractions terminal ──► MentionResolver(project bran
   - Matching is exact on normalised alias sets. Same-brand duplicates collapse to the earliest
     position (REQ-12..REQ-14).
   - The resolver version is `res-<n>`.
+- **`MentionResolver`** details (T6):
+  - A mention matches on its name key or the stem of the domain the answer gave. Untracked names
+    collapse by key like tracked ones, and positions are renumbered 1..n after collapsing.
+  - A cited domain belongs to a brand when it equals one of the brand's domain aliases, is a
+    subdomain of one, or has the same stem (another TLD). The own brand wins a tie.
+  - Citations are classified for every done unit, even when its extraction failed: they need no
+    model call.
 - **`ScanAnalyser`**:
-  - Triggered after `ScanFinalizer` and whenever an extraction of that scan reaches a terminal
-    state.
-  - Once every `done` unit's extraction is terminal, it resolves the scan's mentions, adds the
-    extraction cost and sets `analysed_at` and `versions` (REQ-16, REQ-18).
-  - A `ReResolveJob` reruns the resolver for a project after brand edits (REQ-15).
+  - Runs as a sweep on the extraction worker's poller after each drain, instead of being called
+    from `ScanFinalizer`. A sweep needs no changes to the scan worker, and it also picks up scans
+    whose extractions all finished before the scan did.
+  - A scan is ready when it is finished, not yet analysed, and none of its `done` units has an
+    extraction for the current version that is still queued or running.
+  - Each scan is handled in one transaction under `FOR UPDATE SKIP LOCKED`. In that transaction it
+    rewrites the scan's mentions and citations, sets the totals and `analysed_at`, and merges
+    `versions.extractor` (version and fingerprint) and `versions.resolver` (REQ-16, REQ-18).
+  - Extraction cost is added once to `scan.cost_chf` and stored in `extraction_cost_chf`. Like the
+    answer itself, a shared extraction is paid only by the unit that made the fresh call, never by
+    cache hits.
+  - **ReResolveJob** (REQ-15) is the second sweep:
+    - Every brand or alias edit bumps `project.brands_version` (V8).
+    - Analysed scans whose `scan.brands_version` is behind their project's are re-resolved with the
+      extractor version stored in their `versions`, without any model call.
+    - The edit and the sweep never block each other. An edit that commits during a re-resolution
+      leaves the scan behind again, so the next sweep picks it up.
+  - With the extractor off, nothing is analysed.
 - **`BrandsController`** `/v1/projects/{id}/brands` (GET, POST competitor, PATCH brand, DELETE
   brand / alias) and **`MentionsController`** `GET /v1/scans/{id}/mentions` (REQ-23, REQ-24). The
   OpenAPI contract is regenerated in the same PR.
@@ -125,6 +145,9 @@ scan_citation    (account_id, scan_id, scan_unit_id, url, domain, source provide
 scan             + analysed_at, extraction_cost_chf, answers_extracted, extractions_failed,
                    grounding_rejections
 ```
+
+Flyway `V8__scan_analysis_brands_version.sql` (T6): `project.brands_version`, `scan.brands_version`,
+and partial indexes for the two sweeps.
 
 - **Shared rows.** `answer_extraction` and `answer_brand` hang off the shared `llm_call`, like
   `llm_call_citation`, and carry no tenant data. Every tenant-owned table (`brand`, `brand_alias`,

@@ -20,7 +20,8 @@ import java.util.UUID;
  * Own brand and competitors of a project (extraction-analysis REQ-1..REQ-3, REQ-23). A brand's
  * matching keys are its normalised name plus its aliases' keys; no key may belong to two active
  * brands of one project, so resolution is never ambiguous (REQ-2). Writes lock the account row so
- * concurrent edits cannot overshoot the competitor limit or race on keys.
+ * concurrent edits cannot overshoot the competitor limit or race on keys. Every edit bumps the
+ * project's brands version so its analysed scans are re-resolved (REQ-15).
  */
 @Service
 public class BrandService {
@@ -87,6 +88,7 @@ public class BrandService {
                 brands.insertAlias(projectId, id, "name", value, k);
             }
         }
+        brands.bumpBrandsVersion(projectId);
         return brands.find(projectId, id).orElseThrow();
     }
 
@@ -99,6 +101,7 @@ public class BrandService {
         String name = name(rawName);
         requireFree(keysOf(current, brandId), key("name", BrandNormalizer.name(name)), "name");
         brands.rename(brandId, name);
+        brands.bumpBrandsVersion(projectId);
         return brands.find(projectId, brandId).orElseThrow();
     }
 
@@ -127,6 +130,7 @@ public class BrandService {
             throw new InvalidInputException("value", "this brand already has an alias with the same matching key");
         }
         brands.insertAlias(projectId, brandId, kind, value, k);
+        brands.bumpBrandsVersion(projectId);
         return brands.find(projectId, brandId).orElseThrow();
     }
 
@@ -139,6 +143,7 @@ public class BrandService {
             throw new InvalidInputException("brandId", "the project's own brand can be renamed but not deleted");
         }
         brands.softDeleteCompetitor(brandId);
+        brands.bumpBrandsVersion(projectId);
     }
 
     @Transactional
@@ -149,6 +154,7 @@ public class BrandService {
         if (brands.softDeleteAlias(brandId, aliasId) == 0) {
             throw new NotFoundException("alias");
         }
+        brands.bumpBrandsVersion(projectId);
     }
 
     private String lockAccount() {

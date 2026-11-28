@@ -24,7 +24,8 @@ import java.util.concurrent.TimeUnit;
  * claims with SKIP LOCKED and a lease, calls the extractor outside any transaction, runs the grounding
  * check, and stores the brands with the call's usage and cost. Retryable failures back off up to the
  * scan worker's {@code max-attempts}; refusals and invalid output fail at once. A circuit breaker
- * pauses the extractor after consecutive failures. Idle when no {@link Extractor} is configured.
+ * pauses the extractor after consecutive failures. After each drain the poller runs the
+ * {@link ScanAnalyser} sweeps. Idle when no {@link Extractor} is configured.
  */
 public final class ExtractionWorker implements SmartLifecycle {
 
@@ -33,10 +34,13 @@ public final class ExtractionWorker implements SmartLifecycle {
     /** Outcome per extraction; drives the breaker. */
     public enum Outcome { DONE, RETRY, FAILED, LOST_LEASE }
 
+    static final int SWEEP_LIMIT = 20;
+
     private final ExtractionQueueRepository queue;
     private final Extractor extractor;
     private final ScanWorkerProperties props;
     private final ScanTelemetry telemetry;
+    private final ScanAnalyser analyser;
     private final Semaphore permits;
     private final CircuitBreaker breaker;
     private final ExecutorService runners = Executors.newVirtualThreadPerTaskExecutor();
@@ -44,11 +48,12 @@ public final class ExtractionWorker implements SmartLifecycle {
     private volatile boolean running;
 
     public ExtractionWorker(ExtractionQueueRepository queue, Extractor extractor, int concurrency,
-                            ScanWorkerProperties props, ScanTelemetry telemetry, Clock clock) {
+                            ScanWorkerProperties props, ScanTelemetry telemetry, ScanAnalyser analyser, Clock clock) {
         this.queue = queue;
         this.extractor = extractor;
         this.props = props;
         this.telemetry = telemetry;
+        this.analyser = analyser;
         this.permits = new Semaphore(concurrency);
         this.breaker = new CircuitBreaker(props.breakerThreshold(), props.breakerCooldown(), clock);
     }
@@ -103,6 +108,19 @@ public final class ExtractionWorker implements SmartLifecycle {
             }
         }
         return claimed.size();
+    }
+
+    /**
+     * Analyse finished scans whose extractions are all terminal, then re-resolve scans whose project's
+     * brands changed (extraction-analysis REQ-12..REQ-18). The poller calls it after each drain.
+     *
+     * @return how many scans were analysed or re-resolved
+     */
+    public int analyseOnce() {
+        if (extractor == null) {
+            return 0;
+        }
+        return analyser.analyseReady(extractor.version(), SWEEP_LIMIT) + analyser.reResolveStale(SWEEP_LIMIT);
     }
 
     Outcome run(ClaimedExtraction c) {
@@ -168,6 +186,11 @@ public final class ExtractionWorker implements SmartLifecycle {
                 drainOnce();
             } catch (RuntimeException ex) {
                 log.warn("Extraction poller failed: {}", ex.toString());
+            }
+            try {
+                analyseOnce();
+            } catch (RuntimeException ex) {
+                log.warn("Scan analysis failed: {}", ex.toString());
             }
         }, ms, ms, TimeUnit.MILLISECONDS);
         running = true;

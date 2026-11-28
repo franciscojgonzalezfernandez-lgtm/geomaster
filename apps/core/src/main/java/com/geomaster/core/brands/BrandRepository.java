@@ -114,6 +114,12 @@ public class BrandRepository {
                 .param("id", aliasId).param("brandId", brandId).param("accountId", TenantContext.accountId()).update();
     }
 
+    /** A brand or alias changed: scans of the project are re-resolved by the analyser (extraction-analysis REQ-15). */
+    public void bumpBrandsVersion(UUID projectId) {
+        db.sql("UPDATE project SET brands_version = brands_version + 1 WHERE id = :id AND account_id = :accountId")
+                .param("id", projectId).param("accountId", TenantContext.accountId()).update();
+    }
+
     /** "ride-flumserberg.ch" → "Ride Flumserberg": first label, hyphens as spaces, words capitalised. */
     static String displayName(String domain) {
         String label = domain.split("\\.", 2)[0];
